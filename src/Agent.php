@@ -132,19 +132,18 @@ abstract class Agent
         return $this->run();
     }
 
-    protected function run()
+    protected function start()
     {
         $messages = $this->buildPromptMessages();
         $tools    = $this->buildTools();
+        yield from $this->iteration($messages, $tools);
+    }
 
-        $start = microtime(true);
-
+    protected function run()
+    {
         try {
-            $res = $this->start();
-            if ($res) {
-                yield from $res;
-            }
-            yield from $this->iteration($messages, $tools);
+            $start = microtime(true);
+            yield from $this->start();
         } finally {
             $latency = round((microtime(true) - $start) * 1000);
 
@@ -165,10 +164,9 @@ abstract class Agent
             $this->round  = 0;
             $this->usage  = 0;
             $this->chunks = [];
+            $this->tools  = [];
         }
     }
-
-    abstract protected function start();
 
     abstract protected function saveMessage($usage, $latency);
 
