@@ -197,9 +197,7 @@ abstract class Agent
         try {
             $result = $this->getClient()->chat()->completions($params);
 
-            foreach ($result as $data) {
-                $event = json_decode($data, true);
-
+            foreach ($result as $event) {
                 if (!empty($event['delta']['tool_calls'])) {
                     $call      = $event['delta']['tool_calls'][0];
                     $callIndex = $call['index'] ?? 0;
