@@ -26,29 +26,11 @@ abstract class Agent
             return null;
         }
         $tools = [];
-        if (!empty($this->config['tools'])) {
-            foreach ($this->config['tools'] as $tool) {
-                $tools[] = [
-                    'type'   => 'plugin',
-                    'plugin' => [
-                        'name' => $tool['plugin'],
-                        'tool' => $tool['name'],
-                    ],
-                ];
-            }
-        }
 
         foreach ($this->tools as $name => $tool) {
             /** @var Tool $object */
-            [$object] = $tool;
-            $tools[] = [
-                'type'     => $object->getType(),
-                'function' => [
-                    'name'        => $name,
-                    'description' => $object->getLlmDescription(),
-                    'parameters'  => $object->getLlmParameters(),
-                ],
-            ];
+            [$object, $args] = $tool;
+            $tools[] = $object->toArray($name, $args);
         }
 
         return $tools;
