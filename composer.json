@@ -1,0 +1,20 @@
+{
+    "name": "topthink/think-ai",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "yunwuxin",
+            "email": "448901948@qq.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.0",
+        "guzzlehttp/guzzle": "^7.0",
+        "topthink/think-helper": "^3.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "think\\ai\\": "src"
+        }
+    }
+}
