@@ -9,9 +9,6 @@ use think\ai\agent\tool\result\Raw;
 use think\helper\Arr;
 use think\helper\Str;
 
-/**
- * @method run($args)
- */
 abstract class Tool implements JsonSerializable
 {
     protected $type        = 'function';
@@ -34,6 +31,8 @@ abstract class Tool implements JsonSerializable
         }
         return $res;
     }
+
+    abstract public function run(Args $args);
 
     public function getType()
     {
