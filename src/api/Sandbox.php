@@ -13,7 +13,7 @@ class Sandbox extends Api
 
     public function execute($id, $code, $files = [])
     {
-        return $this->request("sandbox/{$id}/execute", [
+        return $this->request("POST", "sandbox/{$id}/execute", [
             'json' => [
                 'code'  => $code,
                 'files' => $files,

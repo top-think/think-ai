@@ -207,7 +207,7 @@ abstract class Agent
 
     abstract protected function saveMessage($usage, $latency);
 
-    abstract protected function consumeTokens($usage);
+    abstract protected function consumeTokens(int $usage): int;
 
     protected function iteration($messages, $tools)
     {
