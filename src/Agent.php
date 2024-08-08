@@ -38,7 +38,7 @@ abstract class Agent
         return $this->functions[$key];
     }
 
-    protected function addPlugin($name, $tool, $args)
+    protected function addPlugin($name, $tool, $args = [])
     {
         $this->plugins[] = [
             'name' => $name,
