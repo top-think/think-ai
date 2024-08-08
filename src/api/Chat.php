@@ -12,6 +12,10 @@ class Chat extends Api
     {
         $stream = $params['stream'] ?? true;
 
+        if (!isset($params['moderation'])) {
+            $params['moderation'] = true;
+        }
+
         $res = $this->request('POST', 'chat/completions', [
             'json'   => $params,
             'stream' => $stream,
