@@ -3,11 +3,11 @@
 namespace think\ai\agent\tool;
 
 use JsonSerializable;
-use think\ai\agent\tool\result\Raw;
+use think\ai\agent\tool\result\Plain;
 use think\helper\Arr;
 use think\helper\Str;
 
-abstract class Func implements JsonSerializable
+abstract class FunctionCall implements JsonSerializable
 {
     protected $name        = null;
     protected $title       = null;
@@ -24,12 +24,12 @@ abstract class Func implements JsonSerializable
         $res = $this->run(new Args($args));
 
         if (!$res instanceof Result) {
-            $res = new Raw($res);
+            $res = new Plain($res);
         }
         return $res;
     }
 
-    abstract public function run(Args $args);
+    abstract protected function run(Args $args);
 
     public function getName()
     {

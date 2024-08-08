@@ -5,7 +5,7 @@ namespace think\ai\agent\tool;
 use think\ai\agent\tool\result\Raw;
 use think\ai\Client;
 
-class CodeRunner extends Func
+class CodeRunner extends FunctionCall
 {
     protected $title       = '代码执行器';
     protected $name        = 'runner';

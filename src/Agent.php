@@ -2,7 +2,7 @@
 
 namespace think\ai;
 
-use think\ai\agent\tool\Func;
+use think\ai\agent\tool\FunctionCall;
 use think\ai\agent\tool\result\Error;
 use think\ai\agent\tool\result\Raw;
 use think\helper\Arr;
@@ -20,7 +20,7 @@ abstract class Agent
 
     protected $canUseTool = false;
 
-    protected function addFunction($key, Func $func, $args = [])
+    protected function addFunction($key, FunctionCall $func, $args = [])
     {
         $this->functions[$key] = [$func, $args];
         return $this;
@@ -28,7 +28,7 @@ abstract class Agent
 
     /**
      * @param $key
-     * @return array{Func, array}
+     * @return array{FunctionCall, array}
      */
     protected function getFunction($key)
     {
@@ -64,7 +64,7 @@ abstract class Agent
         }
 
         foreach ($this->functions as $name => $function) {
-            /** @var Func $object */
+            /** @var FunctionCall $object */
             [$object, $args] = $function;
             $tools[] = $object->toArray($name, $args);
         }
@@ -332,19 +332,16 @@ abstract class Agent
                             }
 
                             $result = $function(array_merge($arguments, $args));
-
-                            $messages[] = [
-                                'tool_call_id' => $id,
-                                'role'         => 'tool',
-                                'name'         => $name,
-                                'content'      => $result->getResponse(),
-                            ];
-
-                            //调用工具产生的计费
-                            $this->usage += $result->getUsage();
                         } catch (Throwable $e) {
                             $result = new Error($e);
                         }
+
+                        $messages[] = [
+                            'tool_call_id' => $id,
+                            'role'         => 'tool',
+                            'name'         => $name,
+                            'content'      => $result->getResponse(),
+                        ];
                         break;
                 }
 
