@@ -2,34 +2,70 @@
 
 namespace think\ai;
 
-use think\ai\agent\Tool;
-use think\ai\agent\tool\Result;
+use think\ai\agent\tool\Func;
 use think\ai\agent\tool\result\Error;
+use think\ai\agent\tool\result\Raw;
 use think\helper\Arr;
 use Throwable;
 
 abstract class Agent
 {
-    /** @var array<Tool> */
-    protected $tools  = [];
     protected $config = [];
 
-    protected $usage  = 0;
-    protected $round  = 0;
-    protected $chunks = [];
+    protected $usage     = 0;
+    protected $round     = 0;
+    protected $chunks    = [];
+    protected $functions = [];
+    protected $plugins   = [];
 
     protected $canUseTool = false;
+
+    protected function addFunction($key, Func $func, $args = [])
+    {
+        $this->functions[$key] = [$func, $args];
+        return $this;
+    }
+
+    /**
+     * @param $key
+     * @return array{Func, array}
+     */
+    protected function getFunction($key)
+    {
+        if (!isset($this->functions[$key])) {
+            return [null, []];
+        }
+        return $this->functions[$key];
+    }
+
+    protected function addPlugin($name, $tool, $args)
+    {
+        $this->plugins[] = [
+            'name' => $name,
+            'tool' => $tool,
+            'args' => $args,
+        ];
+        return $this;
+    }
 
     protected function buildTools()
     {
         if (!$this->canUseTool) {
             return null;
         }
+
         $tools = [];
 
-        foreach ($this->tools as $name => $tool) {
-            /** @var Tool $object */
-            [$object, $args] = $tool;
+        foreach ($this->plugins as $plugin) {
+            $tools[] = [
+                'type'   => 'plugin',
+                'plugin' => $plugin,
+            ];
+        }
+
+        foreach ($this->functions as $name => $function) {
+            /** @var Func $object */
+            [$object, $args] = $function;
             $tools[] = $object->toArray($name, $args);
         }
 
@@ -161,10 +197,11 @@ abstract class Agent
                 $this->saveMessage($usage, $latency);
             }
 
-            $this->round  = 0;
-            $this->usage  = 0;
-            $this->chunks = [];
-            $this->tools  = [];
+            $this->round     = 0;
+            $this->usage     = 0;
+            $this->chunks    = [];
+            $this->functions = [];
+            $this->plugins   = [];
         }
     }
 
@@ -204,37 +241,35 @@ abstract class Agent
                     if (!isset($calls[$callIndex])) {
                         $calls[$callIndex] = $call;
 
-                        if ($call['type'] == 'plugin') {
+                        switch ($call['type']) {
+                            case 'plugin':
+                                $payload = [
+                                    'id'        => $call['id'],
+                                    'name'      => $call['plugin']['function'],
+                                    'title'     => $call['plugin']['title'],
+                                    'arguments' => $call['plugin']['arguments'],
+                                ];
+                                break;
+                            case 'function':
+                                $name = $call['function']['name'];
+                                [$function] = $this->getFunction($name);
+                                if ($function) {
+                                    $payload = [
+                                        'id'        => $call['id'],
+                                        'name'      => $name,
+                                        'title'     => $function->getTitle(),
+                                        'arguments' => $call['plugin']['arguments'],
+                                    ];
+                                }
+                                break;
+                        }
+
+                        if (!empty($payload)) {
                             //下发调用工具的状态
-                            yield from $this->sendToolData($chunkIndex, $callIndex, [
-                                'id'        => $call['id'],
-                                'name'      => $call['plugin']['function'],
-                                'title'     => $call['plugin']['title'],
-                                'arguments' => $call['plugin']['arguments'],
-                            ]);
+                            yield from $this->sendToolData($chunkIndex, $callIndex, $payload);
                         }
                     } else {
                         $calls[$callIndex] = Util::mergeDeep($calls[$callIndex], $call);
-                        if (!empty($call['plugin'])) {
-                            $content = $call['plugin']['content'];
-                            if (!empty($content) && is_array($content)) {
-                                switch ($content['type']) {
-                                    case 'image':
-                                        //图片本地化
-                                        $content['image'] = $this->saveImage($content['image']);
-                                        break;
-                                }
-                            }
-
-                            //下发调用工具完成的状态
-                            yield from $this->sendToolData($chunkIndex, $callIndex, [
-                                'content'  => $content,
-                                'response' => $call['plugin']['response'],
-                                'error'    => $call['plugin']['error'],
-                            ]);
-
-                            $this->usage += $call['plugin']['usage'];
-                        }
                     }
                 } else {
                     $content = $event['delta']['content'] ?? '';
@@ -262,54 +297,67 @@ abstract class Agent
                 $id   = $call['id'];
                 $type = $call['type'];
 
-                if ($type == 'function') {
-                    $name      = $call['function']['name'];
-                    $arguments = $call['function']['arguments'];
-
-                    try {
-                        if (!isset($this->tools[$name])) {
-                            throw new Exception("tool [{$name}] not exist");
+                switch ($type) {
+                    case 'plugin':
+                        $content = $call['plugin']['content'];
+                        if (!empty($content) && is_array($content)) {
+                            switch ($content['type']) {
+                                case 'image':
+                                    //图片本地化
+                                    $content['image'] = $this->saveImage($content['image']);
+                                    break;
+                            }
                         }
 
-                        [$tool, $args] = $this->tools[$name];
-
-                        //下发调用工具的状态
-                        yield from $this->sendToolData($chunkIndex, $index, [
-                            'id'        => $id,
-                            'name'      => $name,
-                            'title'     => $tool->getTitle(),
-                            'arguments' => $arguments,
+                        $result = new Raw([
+                            'response' => $call['plugin']['response'],
+                            'content'  => $content,
+                            'error'    => $call['plugin']['error'],
+                            'usage'    => $call['plugin']['usage'],
                         ]);
+                        break;
+                    case 'function':
+                        try {
+                            $name = $call['function']['name'];
+                            [$function, $args] = $this->getFunction($name);
 
-                        $arguments = json_decode($arguments, true);
+                            if (empty($function)) {
+                                throw new Exception("tool [{$name}] not exist");
+                            }
 
-                        if (!is_array($arguments)) {
-                            $arguments = [];
+                            $arguments = json_decode($call['function']['arguments'], true);
+
+                            if (!is_array($arguments)) {
+                                $arguments = [];
+                            }
+
+                            $result = $function(array_merge($arguments, $args));
+
+                            $messages[] = [
+                                'tool_call_id' => $id,
+                                'role'         => 'tool',
+                                'name'         => $name,
+                                'content'      => $result->getResponse(),
+                            ];
+
+                            //调用工具产生的计费
+                            $this->usage += $result->getUsage();
+                        } catch (Throwable $e) {
+                            $result = new Error($e);
                         }
-                        /** @var Result $result */
-                        $result = $tool(array_merge($arguments, $args));
+                        break;
+                }
 
-                        //调用工具产生的计费
-                        $this->usage += $result->getUsage();
-                    } catch (Throwable $e) {
-                        $result = new Error($e);
-                    }
-
-                    $response = $result->getResponse();
+                if (!empty($result)) {
+                    //调用工具产生的计费
+                    $this->usage += $result->getUsage();
 
                     //下发调用工具完成的状态
                     yield from $this->sendToolData($chunkIndex, $index, [
-                        'response' => $response,
-                        'error'    => $result instanceof Error,
+                        'response' => $result->getResponse(),
+                        'error'    => $result->isError(),
                         'content'  => $result->getContent(),
                     ]);
-
-                    $messages[] = [
-                        'tool_call_id' => $id,
-                        'role'         => 'tool',
-                        'name'         => $name,
-                        'content'      => $response,
-                    ];
                 }
             }
 

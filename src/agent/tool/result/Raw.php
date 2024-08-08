@@ -14,6 +14,8 @@ class Raw extends Result
     {
         $this->content  = Arr::get($result, 'content', '');
         $this->response = Arr::get($result, 'response');
+        $this->error    = Arr::get($result, 'error', false);
+        $this->usage    = Arr::get($result, 'usage', 0);
     }
 
     public function getContent()

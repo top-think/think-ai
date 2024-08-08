@@ -9,7 +9,7 @@ class Error extends Result
 {
     public function __construct(protected Throwable $exception)
     {
-
+        $this->error = true;
     }
 
     public function getResponse()

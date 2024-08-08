@@ -1,17 +1,14 @@
 <?php
 
-namespace think\ai\agent;
+namespace think\ai\agent\tool;
 
 use JsonSerializable;
-use think\ai\agent\tool\Args;
-use think\ai\agent\tool\Result;
 use think\ai\agent\tool\result\Raw;
 use think\helper\Arr;
 use think\helper\Str;
 
-abstract class Tool implements JsonSerializable
+abstract class Func implements JsonSerializable
 {
-    protected $type        = 'function';
     protected $name        = null;
     protected $title       = null;
     protected $description = null;
@@ -33,11 +30,6 @@ abstract class Tool implements JsonSerializable
     }
 
     abstract public function run(Args $args);
-
-    public function getType()
-    {
-        return $this->type;
-    }
 
     public function getName()
     {
@@ -113,7 +105,7 @@ abstract class Tool implements JsonSerializable
     public function toArray($name, $args = [])
     {
         return [
-            'type'     => $this->getType(),
+            'type'     => 'function',
             'function' => [
                 'name'        => $name,
                 'description' => $this->getLlmDescription(),
