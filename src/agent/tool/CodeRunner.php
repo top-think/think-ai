@@ -36,27 +36,32 @@ class CodeRunner extends FunctionCall
     ];
 
     protected $id;
+    protected $usage;
 
     public function __construct(protected Client $client)
     {
     }
 
-    public function run(Args $args)
+    public function prepare()
     {
-        $usage = 0;
         if (!$this->id) {
             $sandbox = $this->client->sandbox()->create();
 
-            $this->id = $sandbox['id'];
-            $usage    = $sandbox['usage'] ?? 0;
+            $this->id    = $sandbox['id'];
+            $this->usage = $sandbox['usage'] ?? 0;
+        } else {
+            $this->usage = 0;
         }
+    }
 
+    public function run(Args $args)
+    {
         $code  = $args->get('code');
         $files = $args->get('files', []);
 
         $result = $this->client->sandbox()->execute($this->id, $code, $files);
 
-        return (new Raw($result))->setUsage($usage);
+        return (new Raw($result))->setUsage($this->usage);
     }
 
     public function __destruct()

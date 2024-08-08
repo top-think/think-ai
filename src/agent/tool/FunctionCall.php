@@ -29,6 +29,11 @@ abstract class FunctionCall implements JsonSerializable
         return $res;
     }
 
+    public function prepare()
+    {
+
+    }
+
     abstract protected function run(Args $args);
 
     public function getName()

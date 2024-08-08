@@ -241,32 +241,29 @@ abstract class Agent
                     if (!isset($calls[$callIndex])) {
                         $calls[$callIndex] = $call;
 
+                        //下发调用工具的状态
                         switch ($call['type']) {
                             case 'plugin':
-                                $payload = [
+                                yield from $this->sendToolData($chunkIndex, $callIndex, [
                                     'id'        => $call['id'],
                                     'name'      => $call['plugin']['function'],
                                     'title'     => $call['plugin']['title'],
                                     'arguments' => $call['plugin']['arguments'],
-                                ];
+                                ]);
                                 break;
                             case 'function':
                                 $name = $call['function']['name'];
                                 [$function] = $this->getFunction($name);
                                 if ($function) {
-                                    $payload = [
+                                    yield from $this->sendToolData($chunkIndex, $callIndex, [
                                         'id'        => $call['id'],
                                         'name'      => $name,
                                         'title'     => $function->getTitle(),
                                         'arguments' => $call['function']['arguments'],
-                                    ];
+                                    ]);
+                                    $function->prepare();
                                 }
                                 break;
-                        }
-
-                        if (!empty($payload)) {
-                            //下发调用工具的状态
-                            yield from $this->sendToolData($chunkIndex, $callIndex, $payload);
                         }
                     } else {
                         $calls[$callIndex] = Util::mergeDeep($calls[$callIndex], $call);
