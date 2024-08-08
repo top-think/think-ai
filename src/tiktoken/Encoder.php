@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace topthink\ai\tiktoken;
+namespace think\ai\tiktoken;
 
 use Closure;
 use RuntimeException;

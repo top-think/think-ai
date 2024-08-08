@@ -3,7 +3,7 @@
 namespace think\ai;
 
 use Closure;
-use topthink\ai\tiktoken\Encoder;
+use think\ai\tiktoken\Encoder;
 
 final class Util
 {

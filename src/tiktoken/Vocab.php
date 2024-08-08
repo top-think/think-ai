@@ -1,6 +1,6 @@
 <?php
 
-namespace topthink\ai\tiktoken;
+namespace think\ai\tiktoken;
 
 use Closure;
 use Countable;
