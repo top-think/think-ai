@@ -258,7 +258,7 @@ abstract class Agent
                                         'id'        => $call['id'],
                                         'name'      => $name,
                                         'title'     => $function->getTitle(),
-                                        'arguments' => $call['plugin']['arguments'],
+                                        'arguments' => $call['function']['arguments'],
                                     ];
                                 }
                                 break;
