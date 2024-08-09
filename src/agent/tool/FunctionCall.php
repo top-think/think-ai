@@ -2,12 +2,18 @@
 
 namespace think\ai\agent\tool;
 
-use think\ai\agent\Tool;
+use JsonSerializable;
 use think\ai\agent\tool\result\Plain;
 use think\helper\Arr;
+use think\helper\Str;
 
-abstract class FunctionCall extends Tool
+abstract class FunctionCall implements JsonSerializable
 {
+    protected $name        = null;
+    protected $title       = null;
+    protected $description = null;
+    protected $parameters  = null;
+
     protected $extra = null;
 
     /**
@@ -79,7 +85,7 @@ abstract class FunctionCall extends Tool
         ];
     }
 
-    public function toArray($name, $args = [])
+    public function toLlm($name)
     {
         return [
             'type'     => 'function',
@@ -88,6 +94,39 @@ abstract class FunctionCall extends Tool
                 'description' => $this->getLlmDescription(),
                 'parameters'  => $this->getLlmParameters(),
             ],
+        ];
+    }
+
+    public function getName()
+    {
+        if ($this->name) {
+            return $this->name;
+        }
+        return Str::snake(class_basename(static::class));
+    }
+
+    public function getTitle()
+    {
+        return $this->title;
+    }
+
+    public function getDescription()
+    {
+        return $this->description;
+    }
+
+    public function getParameters()
+    {
+        return $this->parameters;
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return [
+            'name'        => $this->getName(),
+            'title'       => $this->getTitle(),
+            'description' => $this->getDescription(),
+            'parameters'  => $this->getParameters(),
         ];
     }
 }

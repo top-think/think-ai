@@ -65,8 +65,8 @@ abstract class Agent
 
         foreach ($this->functions as $name => $function) {
             /** @var FunctionCall $object */
-            [$object, $args] = $function;
-            $tools[] = $object->toArray($name, $args);
+            [$object] = $function;
+            $tools[] = $object->toLlm($name);
         }
 
         return $tools;

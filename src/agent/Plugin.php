@@ -3,6 +3,7 @@
 namespace think\ai\agent;
 
 use JsonSerializable;
+use think\ai\agent\tool\FunctionCall;
 use think\helper\Arr;
 use think\helper\Str;
 
@@ -38,7 +39,7 @@ abstract class Plugin implements JsonSerializable
 
     /**
      * @param $name
-     * @return Tool|null
+     * @return FunctionCall|null
      */
     public function getTool($name)
     {
@@ -53,9 +54,6 @@ abstract class Plugin implements JsonSerializable
         }
     }
 
-    /**
-     * @return Tool[]
-     */
     abstract public function getTools();
 
     public function jsonSerialize(): mixed
