@@ -2,9 +2,10 @@
 
 namespace think\ai\agent;
 
+use JsonSerializable;
 use think\helper\Str;
 
-abstract class Tool
+abstract class Tool implements JsonSerializable
 {
     protected $name        = null;
     protected $title       = null;
