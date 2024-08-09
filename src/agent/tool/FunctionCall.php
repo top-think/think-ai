@@ -2,12 +2,11 @@
 
 namespace think\ai\agent\tool;
 
-use JsonSerializable;
 use think\ai\agent\Tool;
 use think\ai\agent\tool\result\Plain;
 use think\helper\Arr;
 
-abstract class FunctionCall extends Tool implements JsonSerializable
+abstract class FunctionCall extends Tool
 {
     protected $extra = null;
 
