@@ -3,6 +3,7 @@
 namespace think\ai\agent;
 
 use JsonSerializable;
+use think\helper\Arr;
 use think\helper\Str;
 
 abstract class Plugin implements JsonSerializable
@@ -33,6 +34,23 @@ abstract class Plugin implements JsonSerializable
     public function getIcon()
     {
         return $this->icon;
+    }
+
+    /**
+     * @param $name
+     * @return Tool|null
+     */
+    public function getTool($name)
+    {
+        $tools = $this->getTools();
+
+        $tool = Arr::first($tools, function ($tool) use ($name) {
+            return $tool->getName() == $name;
+        });
+
+        if ($tool) {
+            return $tool;
+        }
     }
 
     /**
