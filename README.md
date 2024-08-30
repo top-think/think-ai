@@ -1,5 +1,6 @@
-用法
+## 用法
 
+### 聊天
 ```php
 use think\ai\Client;
 
@@ -27,3 +28,19 @@ foreach($result as $chunk){
     dump($chunk);
 }
 ```
+
+### 图像
+```php
+use think\ai\Client;
+
+$client = new Client('YOUR_TOKEN');
+
+//画图
+$client->images()->generations($params);
+//涂抹编辑
+$client->images()->inpainting($params);
+//图像扩展
+$client->images()->outpainting($params);
+```
+
+...其他用法类似
