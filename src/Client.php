@@ -4,6 +4,7 @@ namespace think\ai;
 
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Utils;
+use think\ai\api\Audio;
 use think\ai\api\Chat;
 use think\ai\api\Embeddings;
 use think\ai\api\Images;
@@ -11,6 +12,7 @@ use think\ai\api\Model;
 use think\ai\api\Plugin;
 use think\ai\api\Rerank;
 use think\ai\api\Sandbox;
+use think\ai\api\Videos;
 
 class Client
 {
@@ -37,6 +39,16 @@ class Client
     public function images()
     {
         return new Images($this);
+    }
+
+    public function videos()
+    {
+        return new Videos($this);
+    }
+
+    public function audio()
+    {
+        return new Audio($this);
     }
 
     public function embeddings()
