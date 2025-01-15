@@ -26,4 +26,18 @@ class Images extends Api
             'json' => $params,
         ]);
     }
+
+    public function upscale($params)
+    {
+        return $this->request('POST', 'images/outpainting', [
+            'json' => $params,
+        ]);
+    }
+
+    public function poster($params)
+    {
+        return $this->request('POST', 'images/poster', [
+            'json' => $params,
+        ]);
+    }
 }
