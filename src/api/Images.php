@@ -29,7 +29,7 @@ class Images extends Api
 
     public function upscale($params)
     {
-        return $this->request('POST', 'images/outpainting', [
+        return $this->request('POST', 'images/upscale', [
             'json' => $params,
         ]);
     }
