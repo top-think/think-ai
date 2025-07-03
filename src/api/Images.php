@@ -40,4 +40,11 @@ class Images extends Api
             'json' => $params,
         ]);
     }
+
+    public function edit($params)
+    {
+        return $this->request('POST', 'images/edit', [
+            'json' => $params,
+        ]);
+    }
 }
