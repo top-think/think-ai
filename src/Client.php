@@ -9,6 +9,7 @@ use think\ai\api\Chat;
 use think\ai\api\Embeddings;
 use think\ai\api\Images;
 use think\ai\api\Model;
+use think\ai\api\Music;
 use think\ai\api\Plugin;
 use think\ai\api\Rerank;
 use think\ai\api\Sandbox;
@@ -49,6 +50,11 @@ class Client
     public function audio()
     {
         return new Audio($this);
+    }
+
+    public function music()
+    {
+        return new Music($this);
     }
 
     public function embeddings()
