@@ -151,6 +151,10 @@ class ChatBuilderTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('消息列表不能为空');
         
+        // Mock chat API
+        $mockChat = Mockery::mock(\think\ai\api\Chat::class);
+        $this->mockClient->shouldReceive('chat')->andReturn($mockChat);
+        
         $this->builder->model(Model::GPT_4)->send();
     }
     
@@ -158,6 +162,10 @@ class ChatBuilderTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('必须指定模型');
+        
+        // Mock chat API
+        $mockChat = Mockery::mock(\think\ai\api\Chat::class);
+        $this->mockClient->shouldReceive('chat')->andReturn($mockChat);
         
         $this->builder->user('Hello')->send();
     }

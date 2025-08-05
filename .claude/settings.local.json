@@ -4,7 +4,9 @@
       "Bash(git checkout:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(vendor/bin/phpunit:*)",
+      "Bash(php:*)"
     ],
     "deny": []
   }

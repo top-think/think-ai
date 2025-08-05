@@ -4,7 +4,7 @@ namespace think\ai\tests\Unit;
 
 use think\ai\Client;
 use think\ai\tests\TestCase;
-use think\ai\Exception;
+use think\ai\Exception as ThinkAiException;
 use think\ai\api\Chat;
 use think\ai\api\Images;
 use think\ai\Builder\ChatBuilder;
@@ -28,7 +28,7 @@ class ClientTest extends TestCase
     
     public function testConstructorThrowsExceptionWithoutToken()
     {
-        $this->expectException(Exception::class);
+        $this->expectException(ThinkAiException::class);
         $this->expectExceptionMessage('Token 不能为空');
         
         putenv('THINK_AI_TOKEN='); // 确保环境变量为空

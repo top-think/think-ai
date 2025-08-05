@@ -4,6 +4,7 @@ namespace think\ai\tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Mockery;
+use GuzzleHttp\Psr7\Response;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -16,9 +17,9 @@ abstract class TestCase extends BaseTestCase
     /**
      * 创建模拟的 HTTP 响应
      */
-    protected function createMockResponse(array $data, int $statusCode = 200): \GuzzleHttp\Psr7\Response
+    protected function createMockResponse(array $data, int $statusCode = 200): Response
     {
-        return new \GuzzleHttp\Psr7\Response(
+        return new Response(
             $statusCode,
             ['Content-Type' => 'application/json'],
             json_encode($data)
@@ -28,7 +29,7 @@ abstract class TestCase extends BaseTestCase
     /**
      * 创建模拟的流式响应
      */
-    protected function createMockStreamResponse(array $chunks): \GuzzleHttp\Psr7\Response
+    protected function createMockStreamResponse(array $chunks): Response
     {
         $stream = '';
         foreach ($chunks as $chunk) {
@@ -36,7 +37,7 @@ abstract class TestCase extends BaseTestCase
         }
         $stream .= "data: [DONE]\n\n";
         
-        return new \GuzzleHttp\Psr7\Response(
+        return new Response(
             200,
             ['Content-Type' => 'text/event-stream'],
             $stream
