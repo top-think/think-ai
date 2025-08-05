@@ -4,6 +4,7 @@ namespace think\ai\Builder;
 
 use think\ai\Client;
 use think\ai\Response\ImageResponse;
+use think\ai\Enum\ImageSize;
 
 class ImageBuilder
 {
@@ -66,6 +67,14 @@ class ImageBuilder
     }
     
     /**
+     * 设置高清质量
+     */
+    public function hd(): self
+    {
+        return $this->quality('hd');
+    }
+    
+    /**
      * 设置风格
      * 
      * @param string $style "vivid" 或 "natural"
@@ -77,6 +86,22 @@ class ImageBuilder
     }
     
     /**
+     * 设置自然风格
+     */
+    public function natural(): self
+    {
+        return $this->style('natural');
+    }
+    
+    /**
+     * 设置生动风格
+     */
+    public function vivid(): self
+    {
+        return $this->style('vivid');
+    }
+    
+    /**
      * 设置响应格式
      * 
      * @param string $format "url" 或 "b64_json"
@@ -85,6 +110,22 @@ class ImageBuilder
     {
         $this->params['response_format'] = $format;
         return $this;
+    }
+    
+    /**
+     * 设置返回 Base64 格式
+     */
+    public function base64(): self
+    {
+        return $this->responseFormat('b64_json');
+    }
+    
+    /**
+     * 设置返回 URL 格式
+     */
+    public function url(): self
+    {
+        return $this->responseFormat('url');
     }
     
     /**
@@ -176,6 +217,30 @@ class ImageBuilder
     {
         $this->params['text'] = $text;
         return $this;
+    }
+    
+    /**
+     * 使用预设：方形图片
+     */
+    public function square(): self
+    {
+        return $this->size(ImageSize::SQUARE_HD);
+    }
+    
+    /**
+     * 使用预设：横向图片
+     */
+    public function landscape(): self
+    {
+        return $this->size(ImageSize::LANDSCAPE);
+    }
+    
+    /**
+     * 使用预设：纵向图片
+     */
+    public function portrait(): self
+    {
+        return $this->size(ImageSize::PORTRAIT);
     }
     
     /**
