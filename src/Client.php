@@ -28,8 +28,8 @@ class Client
     protected $handler;
     
     protected array $defaultModel = [
-        'chat' => 'gpt-3.5-turbo',
-        'image' => 'dall-e-3',
+        'chat'  => 'gpt-4.1-mini',
+        'image' => 'flux-max',
     ];
     
     protected array $middleware = [];
