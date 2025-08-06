@@ -9,6 +9,16 @@ class StreamResponse
     protected StreamIterator $stream;
     protected array $chunks = [];
     protected string $fullContent = '';
+    protected array $toolCalls = [];
+    
+    // Event handlers
+    protected $startHandler = null;
+    protected $contentHandler = null;
+    protected $endHandler = null;
+    protected $errorHandler = null;
+    protected $progressHandler = null;
+    protected int $bufferSize = 0;
+    protected string $bufferedContent = '';
     
     public function __construct(StreamIterator $stream)
     {
@@ -21,6 +31,60 @@ class StreamResponse
     public function getStream(): StreamIterator
     {
         return $this->stream;
+    }
+    
+    /**
+     * 设置开始处理时的回调
+     */
+    public function onStart(callable $callback): self
+    {
+        $this->startHandler = $callback;
+        return $this;
+    }
+    
+    /**
+     * 设置内容处理时的回调
+     */
+    public function onContent(callable $callback): self
+    {
+        $this->contentHandler = $callback;
+        return $this;
+    }
+    
+    /**
+     * 设置处理完成时的回调
+     */
+    public function onEnd(callable $callback): self
+    {
+        $this->endHandler = $callback;
+        return $this;
+    }
+    
+    /**
+     * 设置错误处理时的回调
+     */
+    public function onError(callable $callback): self
+    {
+        $this->errorHandler = $callback;
+        return $this;
+    }
+    
+    /**
+     * 设置进度跟踪回调
+     */
+    public function withProgress(callable $callback): self
+    {
+        $this->progressHandler = $callback;
+        return $this;
+    }
+    
+    /**
+     * 设置缓冲区大小
+     */
+    public function buffer(int $size): self
+    {
+        $this->bufferSize = $size;
+        return $this;
     }
     
     /**
@@ -38,7 +102,44 @@ class StreamResponse
                 $this->fullContent .= $chunk['choices'][0]['delta']['content'];
             }
             
-            $response = new ChatResponse($chunk);
+            // 处理工具调用
+            if (isset($chunk['choices'][0]['delta']['tool_calls'])) {
+                foreach ($chunk['choices'][0]['delta']['tool_calls'] as $toolCall) {
+                    if (isset($toolCall['index'])) {
+                        $index = $toolCall['index'];
+                        if (!isset($this->toolCalls[$index])) {
+                            $this->toolCalls[$index] = [
+                                'id' => '',
+                                'type' => 'function',
+                                'function' => [
+                                    'name' => '',
+                                    'arguments' => ''
+                                ]
+                            ];
+                        }
+                        
+                        // 更新工具调用信息
+                        if (isset($toolCall['id'])) {
+                            $this->toolCalls[$index]['id'] = $toolCall['id'];
+                        }
+                        if (isset($toolCall['function']['name'])) {
+                            $this->toolCalls[$index]['function']['name'] = $toolCall['function']['name'];
+                        }
+                        if (isset($toolCall['function']['arguments'])) {
+                            $this->toolCalls[$index]['function']['arguments'] .= $toolCall['function']['arguments'];
+                        }
+                    }
+                }
+            }
+            
+            // 将 delta 格式转换为 message 格式，以便 ChatResponse 可以正确解析
+            $formattedChunk = $chunk;
+            if (isset($chunk['choices'][0]['delta'])) {
+                $formattedChunk['choices'][0]['message'] = $chunk['choices'][0]['delta'];
+                unset($formattedChunk['choices'][0]['delta']);
+            }
+            
+            $response = new ChatResponse($formattedChunk);
             $callback($response);
         }
         
@@ -69,6 +170,86 @@ class StreamResponse
     public function getChunks(): array
     {
         return $this->chunks;
+    }
+    
+    /**
+     * 处理工具调用事件
+     * 
+     * @param callable $callback 回调函数，接收工具调用对象
+     */
+    public function onToolCall(callable $callback): self
+    {
+        // 处理已经累积的工具调用
+        foreach ($this->toolCalls as $toolCall) {
+            if (!empty($toolCall['function']['name'])) {
+                $callback((object)[
+                    'id' => $toolCall['id'],
+                    'type' => $toolCall['type'],
+                    'name' => $toolCall['function']['name'],
+                    'arguments' => json_decode($toolCall['function']['arguments'], true)
+                ]);
+            }
+        }
+        
+        // 继续处理流并监听新的工具调用
+        return $this->onChunk(function($chunk) use ($callback) {
+            if ($chunk->hasToolCalls()) {
+                foreach ($chunk->getToolCalls() as $toolCall) {
+                    $callback($toolCall);
+                }
+            }
+        });
+    }
+    
+    /**
+     * 获取所有工具调用
+     */
+    public function getToolCalls(): array
+    {
+        $toolCalls = [];
+        
+        // 从已处理的chunks中获取工具调用
+        foreach ($this->chunks as $chunk) {
+            if (isset($chunk['choices'][0]['delta']['tool_calls'])) {
+                foreach ($chunk['choices'][0]['delta']['tool_calls'] as $toolCall) {
+                    if (isset($toolCall['index'])) {
+                        $index = $toolCall['index'];
+                        if (!isset($toolCalls[$index])) {
+                            $toolCalls[$index] = [
+                                'id' => '',
+                                'type' => 'function',
+                                'function' => [
+                                    'name' => '',
+                                    'arguments' => ''
+                                ]
+                            ];
+                        }
+                        
+                        if (isset($toolCall['id'])) {
+                            $toolCalls[$index]['id'] = $toolCall['id'];
+                        }
+                        if (isset($toolCall['function']['name'])) {
+                            $toolCalls[$index]['function']['name'] = $toolCall['function']['name'];
+                        }
+                        if (isset($toolCall['function']['arguments'])) {
+                            $toolCalls[$index]['function']['arguments'] .= $toolCall['function']['arguments'];
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 转换为对象数组
+        return array_map(function($toolCall) {
+            return (object)[
+                'id' => $toolCall['id'],
+                'type' => $toolCall['type'],
+                'name' => $toolCall['function']['name'],
+                'arguments' => json_decode($toolCall['function']['arguments'], true) ?: []
+            ];
+        }, array_filter($toolCalls, function($toolCall) {
+            return !empty($toolCall['function']['name']);
+        }));
     }
     
     /**
@@ -103,5 +284,153 @@ class StreamResponse
         }
         
         return new ChatResponse($responseData);
+    }
+    
+    /**
+     * 处理流式响应
+     */
+    public function process(): self
+    {
+        try {
+            // 触发开始事件
+            if ($this->startHandler) {
+                ($this->startHandler)();
+            }
+            
+            $chunkCount = 0;
+            
+            foreach ($this->stream as $chunk) {
+                $this->chunks[] = $chunk;
+                $chunkCount++;
+                
+                // 累积内容
+                if (isset($chunk['choices'][0]['delta']['content'])) {
+                    $content = $chunk['choices'][0]['delta']['content'];
+                    $this->fullContent .= $content;
+                    
+                    // 处理缓冲区
+                    if ($this->bufferSize > 0) {
+                        $this->bufferedContent .= $content;
+                        if (mb_strlen($this->bufferedContent) >= $this->bufferSize) {
+                            if ($this->contentHandler) {
+                                ($this->contentHandler)($this->bufferedContent);
+                            }
+                            $this->bufferedContent = '';
+                        }
+                    } else {
+                        // 无缓冲区，直接处理
+                        if ($this->contentHandler) {
+                            ($this->contentHandler)($content);
+                        }
+                    }
+                }
+                
+                // 处理工具调用
+                if (isset($chunk['choices'][0]['delta']['tool_calls'])) {
+                    foreach ($chunk['choices'][0]['delta']['tool_calls'] as $toolCall) {
+                        if (isset($toolCall['index'])) {
+                            $index = $toolCall['index'];
+                            if (!isset($this->toolCalls[$index])) {
+                                $this->toolCalls[$index] = [
+                                    'id' => '',
+                                    'type' => 'function',
+                                    'function' => [
+                                        'name' => '',
+                                        'arguments' => ''
+                                    ]
+                                ];
+                            }
+                            
+                            if (isset($toolCall['id'])) {
+                                $this->toolCalls[$index]['id'] = $toolCall['id'];
+                            }
+                            if (isset($toolCall['function']['name'])) {
+                                $this->toolCalls[$index]['function']['name'] = $toolCall['function']['name'];
+                            }
+                            if (isset($toolCall['function']['arguments'])) {
+                                $this->toolCalls[$index]['function']['arguments'] .= $toolCall['function']['arguments'];
+                            }
+                        }
+                    }
+                }
+                
+                // 触发进度事件
+                if ($this->progressHandler) {
+                    ($this->progressHandler)($chunkCount, $chunk);
+                }
+            }
+            
+            // 处理剩余的缓冲内容
+            if ($this->bufferSize > 0 && !empty($this->bufferedContent) && $this->contentHandler) {
+                ($this->contentHandler)($this->bufferedContent);
+                $this->bufferedContent = '';
+            }
+            
+            // 触发结束事件
+            if ($this->endHandler) {
+                ($this->endHandler)($this->fullContent);
+            }
+            
+        } catch (\Exception $e) {
+            // 触发错误事件
+            if ($this->errorHandler) {
+                ($this->errorHandler)($e);
+            } else {
+                throw $e;
+            }
+        }
+        
+        return $this;
+    }
+    
+    /**
+     * 流式输出到浏览器（SSE）
+     */
+    public function streamToBrowser(): void
+    {
+        // 设置SSE头
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache');
+        header('Connection: keep-alive');
+        header('X-Accel-Buffering: no');
+        
+        foreach ($this->stream as $chunk) {
+            if (isset($chunk['choices'][0]['delta']['content'])) {
+                $content = $chunk['choices'][0]['delta']['content'];
+                echo "data: " . json_encode(['content' => $content]) . "\n\n";
+                ob_flush();
+                flush();
+            }
+        }
+        
+        echo "data: [DONE]\n\n";
+        ob_flush();
+        flush();
+    }
+    
+    /**
+     * 流式写入文件
+     */
+    public function streamToFile(string $filename): self
+    {
+        $file = fopen($filename, 'w');
+        
+        if (!$file) {
+            throw new \RuntimeException("无法打开文件: {$filename}");
+        }
+        
+        try {
+            foreach ($this->stream as $chunk) {
+                if (isset($chunk['choices'][0]['delta']['content'])) {
+                    $content = $chunk['choices'][0]['delta']['content'];
+                    fwrite($file, $content);
+                    fflush($file);
+                }
+            }
+        } finally {
+            fclose($file);
+        }
+        
+        return $this;
     }
 }

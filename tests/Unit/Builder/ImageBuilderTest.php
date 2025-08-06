@@ -4,8 +4,6 @@ namespace think\ai\tests\Unit\Builder;
 
 use think\ai\Builder\ImageBuilder;
 use think\ai\Client;
-use think\ai\Enum\Model;
-use think\ai\Enum\ImageSize;
 use think\ai\tests\TestCase;
 use Mockery;
 
@@ -32,11 +30,11 @@ class ImageBuilderTest extends TestCase
     
     public function testModel()
     {
-        $result = $this->builder->model(Model::DALL_E_3);
+        $result = $this->builder->model('dall-e-3');
         
         $this->assertSame($this->builder, $result);
         $params = $this->builder->getParams();
-        $this->assertEquals(Model::DALL_E_3, $params['model']);
+        $this->assertEquals('dall-e-3', $params['model']);
     }
     
     public function testN()
@@ -50,25 +48,16 @@ class ImageBuilderTest extends TestCase
     
     public function testSize()
     {
-        $result = $this->builder->size(ImageSize::LANDSCAPE);
+        $result = $this->builder->size('1792x1024');
         
         $this->assertSame($this->builder, $result);
         $params = $this->builder->getParams();
-        $this->assertEquals(ImageSize::LANDSCAPE, $params['size']);
+        $this->assertEquals('1792x1024', $params['size']);
     }
     
     public function testQuality()
     {
         $result = $this->builder->quality('hd');
-        
-        $this->assertSame($this->builder, $result);
-        $params = $this->builder->getParams();
-        $this->assertEquals('hd', $params['quality']);
-    }
-    
-    public function testHd()
-    {
-        $result = $this->builder->hd();
         
         $this->assertSame($this->builder, $result);
         $params = $this->builder->getParams();
@@ -82,24 +71,6 @@ class ImageBuilderTest extends TestCase
         $this->assertSame($this->builder, $result);
         $params = $this->builder->getParams();
         $this->assertEquals('natural', $params['style']);
-    }
-    
-    public function testNatural()
-    {
-        $result = $this->builder->natural();
-        
-        $this->assertSame($this->builder, $result);
-        $params = $this->builder->getParams();
-        $this->assertEquals('natural', $params['style']);
-    }
-    
-    public function testVivid()
-    {
-        $result = $this->builder->vivid();
-        
-        $this->assertSame($this->builder, $result);
-        $params = $this->builder->getParams();
-        $this->assertEquals('vivid', $params['style']);
     }
     
     public function testResponseFormat()
@@ -127,24 +98,6 @@ class ImageBuilderTest extends TestCase
         $this->assertSame($this->builder, $result);
         $params = $this->builder->getParams();
         $this->assertEquals('url', $params['response_format']);
-    }
-    
-    public function testPresetSizes()
-    {
-        // Test square
-        $this->builder->square();
-        $params = $this->builder->getParams();
-        $this->assertEquals(ImageSize::SQUARE_HD, $params['size']);
-        
-        // Test landscape
-        $this->builder->landscape();
-        $params = $this->builder->getParams();
-        $this->assertEquals(ImageSize::LANDSCAPE, $params['size']);
-        
-        // Test portrait
-        $this->builder->portrait();
-        $params = $this->builder->getParams();
-        $this->assertEquals(ImageSize::PORTRAIT, $params['size']);
     }
     
     public function testEndpointSwitching()
@@ -177,8 +130,8 @@ class ImageBuilderTest extends TestCase
     {
         $this->builder
             ->prompt('A futuristic city')
-            ->model(Model::DALL_E_3)
-            ->size(ImageSize::LANDSCAPE)
+            ->model('dall-e-3')
+            ->size('1792x1024')
             ->quality('hd')
             ->style('vivid')
             ->n(2)
@@ -187,8 +140,8 @@ class ImageBuilderTest extends TestCase
         $params = $this->builder->getParams();
         
         $this->assertEquals('A futuristic city', $params['prompt']);
-        $this->assertEquals(Model::DALL_E_3, $params['model']);
-        $this->assertEquals(ImageSize::LANDSCAPE, $params['size']);
+        $this->assertEquals('dall-e-3', $params['model']);
+        $this->assertEquals('1792x1024', $params['size']);
         $this->assertEquals('hd', $params['quality']);
         $this->assertEquals('vivid', $params['style']);
         $this->assertEquals(2, $params['n']);

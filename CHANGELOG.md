@@ -43,10 +43,7 @@
 - `NetworkException` - 网络异常
 
 #### 7. 类型安全
-- `Model` 枚举 - 预定义所有支持的模型
-- `ImageSize` 枚举 - 图片尺寸常量
 - `Role` 枚举 - 消息角色常量
-- `ChatRequest`, `ImageRequest` - 类型安全的请求类
 
 #### 8. 模型兼容性
 - `ModelCompatibilityMiddleware` - 自动处理不同模型的参数差异
@@ -62,7 +59,7 @@ $response = $client->ask('你好');
 
 // 流式聊天
 $client->chat(function($chat) {
-    $chat->model(Model::GPT_4)
+    $chat->model('gpt-4')
         ->user('写一首诗')
         ->stream(true);
 })->send()
@@ -85,11 +82,6 @@ $image->saveImage('sunset.png');
 3. 流式响应现在默认返回 `EnhancedStreamResponse`
 4. 错误处理建议使用新的异常类型
 
-### 贡献者
-- ThinkPHP 团队
-- Claude AI Assistant
-
----
 
 ## [1.0.0] - 之前版本
 

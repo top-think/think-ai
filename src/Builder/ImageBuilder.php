@@ -4,18 +4,10 @@ namespace think\ai\Builder;
 
 use think\ai\Client;
 use think\ai\Response\ImageResponse;
-use think\ai\Enum\ImageSize;
 
-class ImageBuilder
+class ImageBuilder extends BaseBuilder
 {
-    protected Client $client;
-    protected array $params = [];
     protected string $endpoint = 'generations';
-    
-    public function __construct(Client $client)
-    {
-        $this->client = $client;
-    }
     
     /**
      * 设置提示词
@@ -26,14 +18,6 @@ class ImageBuilder
         return $this;
     }
     
-    /**
-     * 设置模型
-     */
-    public function model(string $model): self
-    {
-        $this->params['model'] = $model;
-        return $this;
-    }
     
     /**
      * 设置图片数量
@@ -67,14 +51,6 @@ class ImageBuilder
     }
     
     /**
-     * 设置高清质量
-     */
-    public function hd(): self
-    {
-        return $this->quality('hd');
-    }
-    
-    /**
      * 设置风格
      * 
      * @param string $style "vivid" 或 "natural"
@@ -83,22 +59,6 @@ class ImageBuilder
     {
         $this->params['style'] = $style;
         return $this;
-    }
-    
-    /**
-     * 设置自然风格
-     */
-    public function natural(): self
-    {
-        return $this->style('natural');
-    }
-    
-    /**
-     * 设置生动风格
-     */
-    public function vivid(): self
-    {
-        return $this->style('vivid');
     }
     
     /**
@@ -128,14 +88,6 @@ class ImageBuilder
         return $this->responseFormat('url');
     }
     
-    /**
-     * 设置用户标识
-     */
-    public function user(string $user): self
-    {
-        $this->params['user'] = $user;
-        return $this;
-    }
     
     /**
      * 设置参考图片（用于编辑、扩展等）
@@ -220,30 +172,6 @@ class ImageBuilder
     }
     
     /**
-     * 使用预设：方形图片
-     */
-    public function square(): self
-    {
-        return $this->size(ImageSize::SQUARE_HD);
-    }
-    
-    /**
-     * 使用预设：横向图片
-     */
-    public function landscape(): self
-    {
-        return $this->size(ImageSize::LANDSCAPE);
-    }
-    
-    /**
-     * 使用预设：纵向图片
-     */
-    public function portrait(): self
-    {
-        return $this->size(ImageSize::PORTRAIT);
-    }
-    
-    /**
      * 设置种子值（用于可重复的生成）
      */
     public function seed(int $seed): self
@@ -261,13 +189,6 @@ class ImageBuilder
         return $this;
     }
     
-    /**
-     * 获取当前参数
-     */
-    public function getParams(): array
-    {
-        return $this->params;
-    }
     
     /**
      * 生成图片

@@ -4,7 +4,6 @@ namespace think\ai\tests\Unit\Builder;
 
 use think\ai\Builder\ChatBuilder;
 use think\ai\Client;
-use think\ai\Enum\Model;
 use think\ai\tests\TestCase;
 use Mockery;
 
@@ -22,11 +21,11 @@ class ChatBuilderTest extends TestCase
     
     public function testModel()
     {
-        $result = $this->builder->model(Model::GPT_4);
+        $result = $this->builder->model('gpt-4');
         
         $this->assertSame($this->builder, $result);
         $params = $this->builder->getParams();
-        $this->assertEquals(Model::GPT_4, $params['model']);
+        $this->assertEquals('gpt-4', $params['model']);
     }
     
     public function testSystem()
@@ -115,7 +114,7 @@ class ChatBuilderTest extends TestCase
     public function testChainedMethods()
     {
         $this->builder
-            ->model(Model::GPT_35_TURBO)
+            ->model('gpt-3.5-turbo')
             ->system('You are a poet')
             ->user('Write a haiku')
             ->temperature(0.9)
@@ -125,7 +124,7 @@ class ChatBuilderTest extends TestCase
         
         $params = $this->builder->getParams();
         
-        $this->assertEquals(Model::GPT_35_TURBO, $params['model']);
+        $this->assertEquals('gpt-3.5-turbo', $params['model']);
         $this->assertEquals(0.9, $params['temperature']);
         $this->assertEquals(50, $params['max_tokens']);
         $this->assertEquals(0.95, $params['top_p']);
@@ -146,30 +145,6 @@ class ChatBuilderTest extends TestCase
         $this->assertEquals('Message 3', $params['messages'][0]['content']);
     }
     
-    public function testSendWithoutMessages()
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('消息列表不能为空');
-        
-        // Mock chat API
-        $mockChat = Mockery::mock(\think\ai\api\Chat::class);
-        $this->mockClient->shouldReceive('chat')->andReturn($mockChat);
-        
-        $this->builder->model(Model::GPT_4)->send();
-    }
-    
-    public function testSendWithoutModel()
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('必须指定模型');
-        
-        // Mock chat API
-        $mockChat = Mockery::mock(\think\ai\api\Chat::class);
-        $this->mockClient->shouldReceive('chat')->andReturn($mockChat);
-        
-        $this->builder->user('Hello')->send();
-    }
-    
     public function testTools()
     {
         $tools = [
@@ -187,6 +162,124 @@ class ChatBuilderTest extends TestCase
         $this->assertSame($this->builder, $result);
         $params = $this->builder->getParams();
         $this->assertEquals($tools, $params['tools']);
+    }
+    
+    public function testTool()
+    {
+        // Test adding a plugin tool
+        $result = $this->builder->tool('plugin', [
+            'name' => 'pmbk5ezJ',
+            'tool' => 'news_internal'
+        ]);
+        
+        $this->assertSame($this->builder, $result);
+        $params = $this->builder->getParams();
+        
+        $expectedTool = [
+            'type' => 'plugin',
+            'plugin' => [
+                'name' => 'pmbk5ezJ',
+                'tool' => 'news_internal'
+            ]
+        ];
+        
+        $this->assertEquals([$expectedTool], $params['tools']);
+    }
+    
+    public function testMultipleTools()
+    {
+        // Test adding multiple tools
+        $this->builder
+            ->tool('plugin', [
+                'name' => 'news_plugin',
+                'tool' => 'get_news'
+            ])
+            ->tool('function', [
+                'name' => 'calculator',
+                'description' => 'Perform calculations',
+                'parameters' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'expression' => [
+                            'type' => 'string',
+                            'description' => 'Math expression'
+                        ]
+                    ]
+                ]
+            ]);
+        
+        $params = $this->builder->getParams();
+        
+        $this->assertCount(2, $params['tools']);
+        $this->assertEquals('plugin', $params['tools'][0]['type']);
+        $this->assertEquals('function', $params['tools'][1]['type']);
+    }
+    
+    public function testImage()
+    {
+        // Test adding image to a text message
+        $result = $this->builder
+            ->user('Describe this image')
+            ->image('https://example.com/image.jpg');
+        
+        $this->assertSame($this->builder, $result);
+        $params = $this->builder->getParams();
+        
+        $expectedContent = [
+            [
+                'type' => 'text',
+                'text' => 'Describe this image'
+            ],
+            [
+                'type' => 'image_url',
+                'image_url' => [
+                    'url' => 'https://example.com/image.jpg'
+                ]
+            ]
+        ];
+        
+        $this->assertEquals($expectedContent, $params['messages'][0]['content']);
+    }
+    
+    public function testImageWithDetail()
+    {
+        // Test adding image with detail level
+        $result = $this->builder->image('https://example.com/image.jpg', 'high');
+        
+        $this->assertSame($this->builder, $result);
+        $params = $this->builder->getParams();
+        
+        $expectedContent = [
+            [
+                'type' => 'image_url',
+                'image_url' => [
+                    'url' => 'https://example.com/image.jpg',
+                    'detail' => 'high'
+                ]
+            ]
+        ];
+        
+        $this->assertEquals($expectedContent, $params['messages'][0]['content']);
+    }
+    
+    public function testImageWithoutExistingMessage()
+    {
+        // Test adding image when there's no existing user message
+        $result = $this->builder->image('https://example.com/image.jpg');
+        
+        $this->assertSame($this->builder, $result);
+        $params = $this->builder->getParams();
+        
+        $expectedContent = [
+            [
+                'type' => 'image_url',
+                'image_url' => [
+                    'url' => 'https://example.com/image.jpg'
+                ]
+            ]
+        ];
+        
+        $this->assertEquals($expectedContent, $params['messages'][0]['content']);
     }
     
     public function testDefaultParameters()

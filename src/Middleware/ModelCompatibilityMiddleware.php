@@ -2,8 +2,6 @@
 
 namespace think\ai\Middleware;
 
-use think\ai\Enum\Model;
-
 /**
  * 模型兼容性中间件
  * 自动处理不同模型的特殊需求和参数调整
@@ -19,14 +17,12 @@ class ModelCompatibilityMiddleware
             return function ($request, $options) use ($handler) {
                 // 获取请求体
                 if (isset($options['json'])) {
-                    $body = &$options['json'];
-                    
                     // 处理模型特定的参数调整
-                    if (isset($body['model'])) {
-                        $model = $body['model'];
+                    if (isset($options['json']['model'])) {
+                        $model = $options['json']['model'];
                         
                         // 根据不同模型调整参数
-                        self::adjustParametersForModel($model, $body);
+                        self::adjustParametersForModel($model, $options['json']);
                     }
                 }
                 
@@ -40,23 +36,6 @@ class ModelCompatibilityMiddleware
      */
     protected static function adjustParametersForModel(string $model, array &$params): void
     {
-        // GPT-4 Vision 特殊处理
-        if ($model === Model::GPT_4_VISION) {
-            // 确保消息内容支持图片
-            if (isset($params['messages'])) {
-                foreach ($params['messages'] as &$message) {
-                    if (is_string($message['content'])) {
-                        // 如果内容包含图片 URL，转换为正确格式
-                        if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $message['content'])) {
-                            $message['content'] = [
-                                ['type' => 'image_url', 'image_url' => ['url' => $message['content']]]
-                            ];
-                        }
-                    }
-                }
-            }
-        }
-        
         // DeepSeek 模型参数调整
         if (strpos($model, 'deepseek') !== false) {
             // DeepSeek 不支持某些参数，需要移除
@@ -88,11 +67,6 @@ class ModelCompatibilityMiddleware
                 $params['top_k'] = 50;
             }
         }
-        
-        // 根据模型的上下文长度限制 max_tokens
-        $contextLength = Model::getContextLength($model);
-        if (isset($params['max_tokens']) && $params['max_tokens'] > $contextLength) {
-            $params['max_tokens'] = min($params['max_tokens'], (int)($contextLength * 0.5));
-        }
+
     }
 }

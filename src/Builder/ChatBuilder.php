@@ -3,30 +3,19 @@
 namespace think\ai\Builder;
 
 use think\ai\Client;
-use think\ai\Response\ChatResponse;
 use think\ai\Response\StreamResponse;
 
-class ChatBuilder
+class ChatBuilder extends BaseBuilder
 {
-    protected Client $client;
     protected array $messages = [];
-    protected array $params = [
-        'stream' => true,
-        'moderation' => true,
-    ];
     
     public function __construct(Client $client)
     {
-        $this->client = $client;
-    }
-    
-    /**
-     * 设置模型
-     */
-    public function model(string $model): self
-    {
-        $this->params['model'] = $model;
-        return $this;
+        parent::__construct($client);
+        $this->params = [
+            'stream' => true,
+            'moderation' => true,
+        ];
     }
     
     /**
@@ -158,14 +147,6 @@ class ChatBuilder
         return $this;
     }
     
-    /**
-     * 设置用户标识
-     */
-    public function user_id(string $userId): self
-    {
-        $this->params['user'] = $userId;
-        return $this;
-    }
     
     /**
      * 设置响应格式
@@ -204,6 +185,124 @@ class ChatBuilder
     }
     
     /**
+     * 添加工具/函数调用
+     * 
+     * @param string $type 工具类型（plugin, function等）
+     * @param array $config 工具配置
+     * @return $this
+     */
+    public function tool(string $type, array $config): self
+    {
+        if (!isset($this->params['tools'])) {
+            $this->params['tools'] = [];
+        }
+        
+        $this->params['tools'][] = ['type' => $type, $type => $config];
+        return $this;
+    }
+    
+    /**
+     * 添加插件工具
+     * 
+     * @param string $name 插件名称
+     * @param string $tool 工具名称
+     * @return $this
+     */
+    public function plugin(string $name, string $tool): self
+    {
+        return $this->tool('plugin', [
+            'name' => $name,
+            'tool' => $tool
+        ]);
+    }
+    
+    /**
+     * 添加函数工具
+     * 
+     * @param string $name 函数名称
+     * @param string $description 函数描述
+     * @param array $parameters 参数模式
+     * @return $this
+     */
+    public function function(string $name, string $description, array $parameters = []): self
+    {
+        return $this->tool('function', [
+            'name' => $name,
+            'description' => $description,
+            'parameters' => $parameters
+        ]);
+    }
+    
+    /**
+     * 强制使用指定工具
+     * 
+     * @param string $name 工具名称
+     * @return $this
+     */
+    public function forceTool(string $name): self
+    {
+        return $this->toolChoice([
+            'type' => 'function',
+            'function' => ['name' => $name]
+        ]);
+    }
+    
+    /**
+     * 添加图片消息（用于视觉模型）
+     * 
+     * @param string $imageUrl 图片URL或base64编码的图片
+     * @param string $detail 图片细节级别（auto, low, high）
+     * @return $this
+     */
+    public function image(string $imageUrl, string $detail = 'auto'): self
+    {
+        // 如果最后一条消息是用户消息，则添加图片到该消息
+        $lastMessage = end($this->messages);
+        $messageConverted = false;
+        
+        if ($lastMessage && $lastMessage['role'] === 'user' && is_string($lastMessage['content'])) {
+            // 将文本内容转换为数组格式
+            $index = count($this->messages) - 1;
+            $this->messages[$index]['content'] = [
+                [
+                    'type' => 'text',
+                    'text' => $lastMessage['content']
+                ]
+            ];
+            $messageConverted = true;
+        }
+        
+        // 添加图片
+        $imageContent = [
+            'type' => 'image_url',
+            'image_url' => [
+                'url' => $imageUrl
+            ]
+        ];
+        
+        if ($detail !== 'auto') {
+            $imageContent['image_url']['detail'] = $detail;
+        }
+        
+        // 重新获取最后一条消息（可能已被转换）
+        $lastMessage = end($this->messages);
+        
+        // 如果最后一条是用户消息且内容是数组，添加到其中
+        if ($lastMessage && $lastMessage['role'] === 'user' && is_array($lastMessage['content'])) {
+            $index = count($this->messages) - 1;
+            $this->messages[$index]['content'][] = $imageContent;
+        } else {
+            // 否则创建新的用户消息
+            $this->messages[] = [
+                'role' => 'user',
+                'content' => [$imageContent]
+            ];
+        }
+        
+        return $this;
+    }
+    
+    /**
      * 清空消息
      */
     public function clearMessages(): self
@@ -213,13 +312,18 @@ class ChatBuilder
     }
     
     /**
-     * 获取当前参数
+     * 获取当前参数（重写以包含消息）
      */
     public function getParams(): array
     {
-        return array_merge($this->params, [
-            'messages' => $this->messages,
-        ]);
+        $params = parent::getParams();
+        
+        // 只有在有消息时才添加 messages 键
+        if (!empty($this->messages)) {
+            $params['messages'] = $this->messages;
+        }
+        
+        return $params;
     }
     
     /**
@@ -229,28 +333,20 @@ class ChatBuilder
      */
     public function send()
     {
+        $this->validateRequired(['model']);
+        
         if (empty($this->messages)) {
             throw new \InvalidArgumentException('消息列表不能为空');
-        }
-        
-        if (!isset($this->params['model'])) {
-            throw new \InvalidArgumentException('必须指定模型');
         }
         
         $params = $this->getParams();
         $result = $this->client->chat()->completions($params);
         
-        // 如果是流式响应，包装成 StreamResponse
-        if ($result instanceof \think\ai\StreamIterator) {
-            return new StreamResponse($result);
-        }
-        
-        // 否则返回 ChatResponse
-        return new ChatResponse($result);
+        return $result;
     }
     
     /**
-     * 快捷方法：直接发送消息并获取回复内容
+     * 直接发送消息并获取回复内容
      * 
      * @param string $message 用户消息
      * @return string 助手回复的内容

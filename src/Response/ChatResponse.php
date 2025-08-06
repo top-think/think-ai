@@ -91,4 +91,41 @@ class ChatResponse extends BaseResponse
     {
         return $this->data['choices'] ?? [];
     }
+    
+    /**
+     * 检查是否有工具调用
+     */
+    public function hasToolCalls(): bool
+    {
+        return !empty($this->data['choices'][0]['message']['tool_calls']);
+    }
+    
+    /**
+     * 获取工具调用列表
+     * 
+     * @return array 工具调用对象数组
+     */
+    public function getToolCalls(): array
+    {
+        $toolCalls = $this->data['choices'][0]['message']['tool_calls'] ?? [];
+        
+        // 转换为更易用的对象格式
+        return array_map(function($toolCall) {
+            return (object)[
+                'id' => $toolCall['id'] ?? '',
+                'type' => $toolCall['type'] ?? 'function',
+                'name' => $toolCall['function']['name'] ?? '',
+                'arguments' => json_decode($toolCall['function']['arguments'] ?? '{}', true),
+                'result' => null // 需要手动执行工具后设置
+            ];
+        }, $toolCalls);
+    }
+    
+    /**
+     * 获取工具调用ID列表
+     */
+    public function getToolCallIds(): array
+    {
+        return array_column($this->data['choices'][0]['message']['tool_calls'] ?? [], 'id');
+    }
 }

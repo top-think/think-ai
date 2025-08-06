@@ -3,7 +3,6 @@
 namespace think\ai\tests\Integration;
 
 use think\ai\Client;
-use think\ai\Enum\Model;
 use think\ai\Response\ChatResponse;
 use think\ai\Response\StreamResponse;
 use think\ai\Exception\RateLimitException;
@@ -46,7 +45,7 @@ class ChatIntegrationTest extends TestCase
         
         // 使用构建器模式
         $response = $client->chatBuilder()
-            ->model(Model::GPT_35_TURBO)
+            ->model('gpt-3.5-turbo')
             ->system('你是一个友好的助手')
             ->user('你好')
             ->temperature(0.7)
@@ -80,7 +79,7 @@ class ChatIntegrationTest extends TestCase
         $client = new Client('test-token', $handlerStack);
         
         $stream = $client->chatBuilder()
-            ->model(Model::GPT_35_TURBO)
+            ->model('gpt-3.5-turbo')
             ->user('你好')
             ->stream(true)
             ->send();
@@ -112,14 +111,14 @@ class ChatIntegrationTest extends TestCase
         $client = new Client('test-token', $handlerStack);
         
         $builder = $client->chat(function($chat) {
-            $chat->model(Model::GPT_4)
+            $chat->model('gpt-4')
                 ->user('Test message')
                 ->temperature(0.5);
         });
         
         $this->assertInstanceOf(\think\ai\Builder\ChatBuilder::class, $builder);
         $params = $builder->getParams();
-        $this->assertEquals(Model::GPT_4, $params['model']);
+        $this->assertEquals('gpt-4', $params['model']);
         $this->assertEquals(0.5, $params['temperature']);
     }
     
@@ -167,7 +166,7 @@ class ChatIntegrationTest extends TestCase
         $this->expectException(RateLimitException::class);
         
         $client->chatBuilder()
-            ->model(Model::GPT_35_TURBO)
+            ->model('gpt-3.5-turbo')
             ->user('Test')
             ->send();
     }
@@ -224,7 +223,7 @@ class ChatIntegrationTest extends TestCase
         $client = new Client('test-token', $handlerStack);
         
         $chatBuilder = $client->chatBuilder()
-            ->model(Model::GPT_35_TURBO)
+            ->model('gpt-3.5-turbo')
             ->system('你是一个天气助手');
         
         // 第一轮

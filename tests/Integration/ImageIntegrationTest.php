@@ -3,8 +3,6 @@
 namespace think\ai\tests\Integration;
 
 use think\ai\Client;
-use think\ai\Enum\Model;
-use think\ai\Enum\ImageSize;
 use think\ai\Response\ImageResponse;
 use think\ai\tests\TestCase;
 use GuzzleHttp\Handler\MockHandler;
@@ -34,8 +32,8 @@ class ImageIntegrationTest extends TestCase
         
         $response = $client->imageBuilder()
             ->prompt('夕阳下的海洋')
-            ->model(Model::DALL_E_3)
-            ->size(ImageSize::LANDSCAPE)
+            ->model('dall-e-3')
+            ->size('1792x1024')
             ->quality('hd')
             ->style('vivid')
             ->generate();
@@ -66,8 +64,8 @@ class ImageIntegrationTest extends TestCase
         
         $response = $client->imageBuilder()
             ->prompt('可爱的猫咪')
-            ->model(Model::DALL_E_2)
-            ->size(ImageSize::MEDIUM)
+            ->model('dall-e-2')
+            ->size('512x512')
             ->n(3)
             ->generate();
         
@@ -96,9 +94,8 @@ class ImageIntegrationTest extends TestCase
         
         $builder = $client->images(function($img) {
             $img->prompt('山水画')
-                ->model(Model::DALL_E_3)
-                ->landscape()
-                ->hd();
+                ->model('dall-e-3')
+                ->size('1024x1024');
         });
         
         $response = $builder->generate();
@@ -190,35 +187,5 @@ class ImageIntegrationTest extends TestCase
             ->generate();
         
         $this->assertEquals('https://example.com/edited-image.png', $response->getUrl());
-    }
-    
-    /**
-     * 测试预设尺寸
-     */
-    public function testPresetSizes()
-    {
-        $mockHandler = new MockHandler([
-            $this->createMockResponse(['data' => [['url' => 'https://example.com/square.png']]]),
-            $this->createMockResponse(['data' => [['url' => 'https://example.com/landscape.png']]]),
-            $this->createMockResponse(['data' => [['url' => 'https://example.com/portrait.png']]])
-        ]);
-        
-        $handlerStack = HandlerStack::create($mockHandler);
-        $client = new Client('test-token', $handlerStack);
-        
-        // 测试方形
-        $response1 = $client->imageBuilder()->prompt('test')->square()->generate();
-        $params1 = $client->imageBuilder()->prompt('test')->square()->getParams();
-        $this->assertEquals(ImageSize::SQUARE_HD, $params1['size']);
-        
-        // 测试横向
-        $response2 = $client->imageBuilder()->prompt('test')->landscape()->generate();
-        $params2 = $client->imageBuilder()->prompt('test')->landscape()->getParams();
-        $this->assertEquals(ImageSize::LANDSCAPE, $params2['size']);
-        
-        // 测试纵向
-        $response3 = $client->imageBuilder()->prompt('test')->portrait()->generate();
-        $params3 = $client->imageBuilder()->prompt('test')->portrait()->getParams();
-        $this->assertEquals(ImageSize::PORTRAIT, $params3['size']);
     }
 }

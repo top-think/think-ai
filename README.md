@@ -42,13 +42,12 @@ echo $imageUrl;
 
 ```php
 use think\ai\Client;
-use think\ai\Enum\Model;
 
 $client = Client::create();
 
 // 方法一：直接使用构建器
 $response = $client->chatBuilder()
-    ->model(Model::GPT_4)
+    ->model('gpt-4')
     ->system('你是一个专业的程序员')
     ->user('如何实现快速排序？')
     ->temperature(0.7)
@@ -57,7 +56,7 @@ $response = $client->chatBuilder()
 
 // 方法二：使用回调函数（更优雅）
 $response = $client->chat(function($chat) {
-    $chat->model(Model::GPT_4)
+    $chat->model('gpt-4')
         ->system('你是一个专业的程序员')
         ->user('如何实现快速排序？')
         ->temperature(0.7)
@@ -76,7 +75,7 @@ echo "使用的 token: " . $response->getTotalTokens();
 ```php
 // 基础流式聊天
 $stream = $client->chatBuilder()
-    ->model(Model::GPT_35_TURBO)
+    ->model('gpt-3.5-turbo')
     ->user('写一个关于春天的诗')
     ->stream(true)
     ->send();
@@ -130,7 +129,7 @@ $stream->withProgress(function($chunkCount, $chunk) {
 ```php
 // 使用回调函数的优雅语法
 $client->chat(function($chat) {
-    $chat->model(Model::GPT_4)
+    $chat->model('gpt-4')
         ->user('写一篇关于人工智能的文章')
         ->stream(true);
 })->send()
@@ -151,7 +150,7 @@ $client->chat(function($chat) {
 
 // 组合多个处理器
 $stream = $client->chatBuilder()
-    ->model(Model::GPT_4)
+    ->model('gpt-4')
     ->user('分析这段代码并给出改进建议')
     ->stream(true)
     ->send();
@@ -174,7 +173,7 @@ $stream
 
 ```php
 $chatBuilder = $client->chatBuilder()
-    ->model(Model::GPT_4)
+    ->model('gpt-4')
     ->system('你是一个有用的助手');
 
 // 第一轮对话
@@ -187,20 +186,86 @@ $chatBuilder->assistant($response1->getContent())
 $response2 = $chatBuilder->send();
 ```
 
-#### 5. 使用类型安全的请求类
+#### 5、工具调用（函数调用）
+
+ThinkAI 支持工具调用（Function Calling），让 AI 能够调用你定义的函数来获取实时数据或执行操作。
 
 ```php
-use think\ai\Request\ChatRequest;
-use think\ai\Enum\Model;
 
-$request = ChatRequest::create()
-    ->model(Model::DEEPSEEK_CHAT)
-    ->system('你是一个数学老师')
-    ->user('解释一下勾股定理')
-    ->temperature(0.5)
-    ->maxTokens(500);
+// 方法1：使用构建器模式（推荐）
+$result = $client->chatBuilder()
+    ->model('gpt-4o-mini')
+    ->user('今天有什么新闻？')
+    ->tool('plugin', [
+        'name' => 'pmbk5ezJ',
+        'tool' => 'news_internal'
+    ])
+    ->send();
 
-$response = $client->chat()->completions($request->toArray());
+// 方法2：使用回调函数语法
+$result = $client->chat(function($chat) {
+    $chat->model('gpt-4o-mini')
+        ->user('帮我查一下北京的天气')
+        ->tool('plugin', [
+            'name' => 'weather_plugin_id',
+            'tool' => 'get_weather'
+        ]);
+})->send();
+
+// 方法3：添加多个工具
+$result = $client->chatBuilder()
+    ->model('gpt-4o')
+    ->user('帮我分析这张图片中的商品并查询价格')
+    ->tool('plugin', [
+        'name' => 'vision_analyzer',
+        'tool' => 'analyze_image'
+    ])
+    ->tool('plugin', [
+        'name' => 'price_checker',
+        'tool' => 'get_product_price'
+    ])
+    ->image('https://example.com/product.jpg')  // 如果需要分析图片
+    ->send();
+
+// 获取工具调用结果
+if ($result->hasToolCalls()) {
+    foreach ($result->getToolCalls() as $toolCall) {
+        echo "调用了工具: {$toolCall->name}\n";
+        echo "参数: " . json_encode($toolCall->arguments, JSON_UNESCAPED_UNICODE) . "\n";
+        echo "结果: {$toolCall->result}\n\n";
+    }
+}
+
+// 流式响应中的工具调用
+$stream = $client->chatBuilder()
+    ->model('gpt-4o')
+    ->user('计算 2 + 2 等于多少')
+    ->tool('function', [
+        'name' => 'calculator',
+        'description' => '执行数学计算',
+        'parameters' => [
+            'type' => 'object',
+            'properties' => [
+                'expression' => [
+                    'type' => 'string',
+                    'description' => '要计算的表达式'
+                ]
+            ],
+            'required' => ['expression']
+        ]
+    ])
+    ->stream(true)
+    ->send();
+
+$stream->onToolCall(function($toolCall) {
+    // 处理工具调用
+    echo "执行计算: {$toolCall->arguments['expression']}\n";
+    // 这里可以执行实际的计算并返回结果
+})
+->onContent(function($content) {
+    echo $content;
+})
+->process();
 ```
 
 ### 图像生成
@@ -208,14 +273,12 @@ $response = $client->chat()->completions($request->toArray());
 #### 1. 使用构建器模式
 
 ```php
-use think\ai\Enum\Model;
-use think\ai\Enum\ImageSize;
 
 // 生成高清方形图片
 $response = $client->imageBuilder()
     ->prompt('未来城市的夜景，赛博朋克风格')
-    ->model(Model::DALL_E_3)
-    ->size(ImageSize::SQUARE_HD)
+    ->model('dall-e-3')
+    ->size('1024x1024')
     ->quality('hd')
     ->generate();
 
@@ -233,37 +296,6 @@ $response = $client->imageBuilder()
 
 // 保存所有图片
 $savedPaths = $response->saveAllImages('./images/', 'dog');
-```
-
-#### 2. 使用预设尺寸
-
-```php
-// 横向图片
-$landscape = $client->imageBuilder()
-    ->prompt('美丽的山水风景')
-    ->landscape()
-    ->generate();
-
-// 纵向图片
-$portrait = $client->imageBuilder()
-    ->prompt('时尚人像摄影')
-    ->portrait()
-    ->natural()  // 使用自然风格
-    ->generate();
-```
-
-#### 3. 使用类型安全的请求类
-
-```php
-use think\ai\Request\ImageRequest;
-
-$request = ImageRequest::create('梦幻般的星空')
-    ->model(Model::DALL_E_3)
-    ->hd()
-    ->square()
-    ->n(2);
-
-$response = $client->images()->generations($request->toArray());
 ```
 
 ### 错误处理
@@ -337,8 +369,8 @@ $client->addMiddleware(\GuzzleHttp\Middleware::retry(
 $client->setEndpoint('https://custom-ai.example.com/');
 
 // 设置默认模型
-$client->setDefaultModel('chat', Model::GPT_4);
-$client->setDefaultModel('image', Model::DALL_E_3);
+$client->setDefaultModel('chat', 'gtp-4.1');
+$client->setDefaultModel('image', 'dall-e-3');
 
 // 使用环境变量
 // 设置 THINK_AI_TOKEN 环境变量后，可以直接创建客户端
@@ -356,11 +388,11 @@ ThinkAI SDK 自动处理不同模型的参数差异：
 ```php
 // 使用不同的模型，SDK 会自动调整参数
 $models = [
-    Model::GPT_4,
-    Model::DEEPSEEK_CHAT,
-    Model::GLM_4,
-    Model::QWEN_TURBO,
-    Model::ERNIE_BOT_4
+    'gpt-4',
+    'deepseek-chat',
+    'glm-4',
+    'qwen-turbo',
+    'ernie-bot-4'
 ];
 
 foreach ($models as $model) {
@@ -371,13 +403,6 @@ foreach ($models as $model) {
     
     echo "{$model}: " . $response->getContent() . "\n";
 }
-
-// SDK 会自动处理：
-// - GPT-4 Vision 的图片消息格式
-// - DeepSeek 不支持的参数
-// - GLM 的 temperature 范围限制
-// - 文心一言的参数名差异
-// - 通义千问的特殊参数
 ```
 
 ### 高级功能
@@ -422,24 +447,4 @@ $embeddings = $client->embeddings()->create([
     'model' => 'text-embedding-ada-002',
     'input' => '机器学习是人工智能的一个分支',
 ]);
-```
-
-### 模型枚举使用
-
-```php
-use think\ai\Enum\Model;
-
-// 获取所有聊天模型
-$chatModels = Model::getChatModels();
-
-// 获取所有图像模型
-$imageModels = Model::getImageModels();
-
-// 检查模型是否支持视觉
-if (Model::supportsVision(Model::GPT_4_VISION)) {
-    // 使用视觉功能
-}
-
-// 获取模型的上下文长度
-$contextLength = Model::getContextLength(Model::GPT_4_TURBO);
 ```
