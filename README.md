@@ -440,6 +440,191 @@ $status = $client->videos()->query([
 ]);
 ```
 
+### 多轮函数调用
+
+使用 `MultiTurnChatManager` 可以轻松处理需要多轮交互的函数调用场景。
+
+#### 基本用法
+
+```php
+use think\ai\MultiTurnChatManager;
+
+$manager = new MultiTurnChatManager($client);
+
+// 注册工具函数
+$manager->registerTool('calculator', function($args) {
+    return eval('return ' . $args['expression'] . ';');
+});
+
+// 开始对话
+$response = $manager->chat()
+    ->model('gpt-4')
+    ->system('你是一个数学助手')
+    ->user('计算 123 + 456 等于多少？')
+    ->function('calculator', '执行数学计算', [
+        'type' => 'object',
+        'properties' => [
+            'expression' => [
+                'type' => 'string',
+                'description' => '要计算的表达式'
+            ]
+        ],
+        'required' => ['expression']
+    ])
+    ->send();
+
+// 如果有工具调用，自动继续对话
+if ($response->hasToolCalls()) {
+    $response = $manager->continueConversation($response);
+}
+
+echo $response->getContent();  // 输出：123 + 456 等于 579
+```
+
+#### 多工具协作
+
+```php
+// 注册多个工具
+$manager->registerTools([
+    'get_weather' => function($args) {
+        // 模拟获取天气
+        return [
+            'city' => $args['city'],
+            'weather' => '晴天',
+            'temperature' => rand(15, 30)
+        ];
+    },
+    'get_time' => function($args) {
+        return [
+            'time' => date('H:i'),
+            'timezone' => $args['timezone'] ?? 'Asia/Shanghai'
+        ];
+    },
+    'search_flights' => function($args) {
+        // 模拟搜索航班
+        return [
+            'from' => $args['from'],
+            'to' => $args['to'],
+            'flights' => [
+                ['flight_no' => 'CA123', 'time' => '08:00', 'price' => 1200],
+                ['flight_no' => 'MU456', 'time' => '14:30', 'price' => 980]
+            ]
+        ];
+    }
+]);
+
+// 复杂的多轮对话
+$response = $manager->chat()
+    ->model('gpt-4')
+    ->system('你是一个旅行助手')
+    ->user('我想明天从北京飞上海，天气怎么样？有什么航班？')
+    ->function('get_weather', '获取天气信息', [
+        'type' => 'object',
+        'properties' => [
+            'city' => ['type' => 'string']
+        ],
+        'required' => ['city']
+    ])
+    ->function('get_time', '获取当前时间', [
+        'type' => 'object',
+        'properties' => [
+            'timezone' => ['type' => 'string']
+        ]
+    ])
+    ->function('search_flights', '搜索航班', [
+        'type' => 'object',
+        'properties' => [
+            'from' => ['type' => 'string'],
+            'to' => ['type' => 'string'],
+            'date' => ['type' => 'string']
+        ],
+        'required' => ['from', 'to']
+    ])
+    ->send();
+
+// 自动处理所有工具调用
+if ($response->hasToolCalls()) {
+    $response = $manager->continueConversation($response);
+}
+
+echo $response->getContent();
+// 输出示例：
+// 明天北京的天气是晴天，温度22度。当前时间是15:30。
+// 我为你找到了以下航班：
+// 1. CA123 - 08:00起飞 - 价格1200元
+// 2. MU456 - 14:30起飞 - 价格980元
+```
+
+#### 流式响应中的工具调用
+
+```php
+$stream = $manager->chat()
+    ->model('gpt-4')
+    ->user('帮我计算几个数学题')
+    ->function('calculator', '数学计算器', [
+        'type' => 'object',
+        'properties' => [
+            'expression' => ['type' => 'string']
+        ],
+        'required' => ['expression']
+    ])
+    ->stream(true)
+    ->send();
+
+$enhancedStream = $manager->processStreamWithTools($stream, function($functionCall) {
+    echo "执行计算: {$functionCall->arguments['expression']}\n";
+});
+
+$enhancedStream->onContent(function($content) {
+    echo $content;
+})->process();
+```
+
+#### 错误处理和重试
+
+```php
+try {
+    $response = $manager
+        ->maxTurns(5)  // 设置最大轮次
+        ->chat()
+        ->model('gpt-4')
+        ->user('执行复杂任务')
+        ->send();
+    
+    if ($response->hasToolCalls()) {
+        $response = $manager->continueConversation($response);
+    }
+    
+    echo $response->getContent();
+    
+} catch (\RuntimeException $e) {
+    echo "对话轮次过多: " . $e->getMessage();
+} catch (\Exception $e) {
+    echo "发生错误: " . $e->getMessage();
+}
+```
+
+#### 查看对话历史
+
+```php
+// 获取完整的对话历史
+$history = $manager->getMessageHistory();
+foreach ($history as $message) {
+    echo "[{$message['role']}] {$message['content']}\n";
+}
+
+// 清空历史开始新对话
+$manager->clearHistory();
+```
+
+### 最佳实践
+
+1. **工具设计**：确保工具函数返回结构化数据，便于模型理解
+2. **错误处理**：在工具函数中捕获异常并返回友好的错误信息
+3. **轮次控制**：设置合理的最大轮次，避免无限循环
+4. **工具注册**：提前注册所有可能用到的工具函数
+5. **流式处理**：对于长任务，使用流式响应提供更好的用户体验
+
 #### 文本嵌入
 
 ```php
