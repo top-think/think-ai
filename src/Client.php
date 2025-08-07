@@ -28,7 +28,7 @@ class Client
     protected $handler;
     
     protected array $defaultModel = [
-        'chat'  => 'gpt-4.1-mini',
+        'chat'  => 'glm-4.5-air',
         'image' => 'flux-max',
     ];
     

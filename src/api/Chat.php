@@ -7,11 +7,10 @@ use think\ai\Api;
 use think\ai\StreamIterator;
 use think\ai\Response\ChatResponse;
 use think\ai\Response\StreamResponse;
-use think\ai\Response\EnhancedStreamResponse;
 
 class Chat extends Api
 {
-    public function completions($params, bool $returnRaw = false, bool $enhanced = true)
+    public function completions($params, bool $returnRaw = false)
     {
         $stream = $params['stream'] ?? true;
 
@@ -35,7 +34,7 @@ class Chat extends Api
         // 返回包装的响应对象
         if ($res instanceof StreamInterface) {
             $iterator = new StreamIterator($res);
-            return $enhanced ? new EnhancedStreamResponse($iterator) : new StreamResponse($iterator);
+            return new StreamResponse($iterator);
         } else {
             return new ChatResponse($res);
         }

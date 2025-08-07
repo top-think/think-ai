@@ -147,7 +147,6 @@ class ChatBuilder extends BaseBuilder
         return $this;
     }
     
-    
     /**
      * 设置响应格式
      */

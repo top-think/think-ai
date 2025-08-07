@@ -106,14 +106,6 @@ $stream->streamToBrowser();
 // 方法4：流式写入文件
 $stream->streamToFile('output.txt');
 
-// 方法5：使用缓冲区（每100字符处理一次）
-$stream->buffer(100)
-    ->onContent(function($bufferedContent) {
-        // 处理缓冲的内容
-        processContent($bufferedContent);
-    })
-    ->process();
-
 // 方法6：带进度跟踪
 $stream->withProgress(function($chunkCount, $chunk) {
     echo "已接收 {$chunkCount} 个数据块\r";

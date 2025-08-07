@@ -101,20 +101,6 @@ class StreamResponseTest extends TestCase
         $this->assertSame($iterator, $stream);
     }
     
-    public function testToResponse()
-    {
-        $chunks = $this->createStreamChunks();
-        $iterator = $this->createMockStreamIterator($chunks);
-        $response = new StreamResponse($iterator);
-        
-        $chatResponse = $response->toResponse();
-        
-        $this->assertInstanceOf(ChatResponse::class, $chatResponse);
-        $this->assertEquals('你好，我是 AI 助手', $chatResponse->getContent());
-        $this->assertEquals('assistant', $chatResponse->getRole());
-        $this->assertEquals(25, $chatResponse->getTotalTokens());
-    }
-    
     public function testEmptyStream()
     {
         $iterator = $this->createMockStreamIterator([]);

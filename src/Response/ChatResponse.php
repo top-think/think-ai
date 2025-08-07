@@ -133,26 +133,6 @@ class ChatResponse extends BaseResponse
      */
     public function getToolCalls(): array
     {
-        $toolCalls = $this->data['message']['tool_calls'] ?? [];
-        
-        // 转换为更易用的对象格式
-        return array_map(function($toolCall) {
-            return (object)[
-                'id' => $toolCall['id'] ?? '',
-                'type' => $toolCall['type'] ?? 'function',
-                'name' => $toolCall['function']['name'] ?? '',
-                'arguments' => json_decode($toolCall['function']['arguments'] ?? '{}', true),
-                'result' => null // 需要手动执行工具后设置
-            ];
-        }, $toolCalls);
-    }
-    
-    /**
-     * 获取工具调用ID列表
-     */
-    public function getToolCallIds(): array
-    {
-        $toolCalls = $this->data['message']['tool_calls'] ?? [];
-        return array_column($toolCalls, 'id');
+        return $this->data['message']['tool_calls'] ?? [];;
     }
 }
