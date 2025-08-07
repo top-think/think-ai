@@ -18,7 +18,7 @@ class ImageIntegrationTest extends TestCase
         $mockHandler = new MockHandler([
             $this->createMockResponse([
                 'created' => time(),
-                'data' => [
+                'images' => [
                     [
                         'url' => 'https://example.com/generated-image.png',
                         'revised_prompt' => 'A beautiful sunset over the ocean with golden colors'
@@ -51,7 +51,7 @@ class ImageIntegrationTest extends TestCase
         $mockHandler = new MockHandler([
             $this->createMockResponse([
                 'created' => time(),
-                'data' => [
+                'images' => [
                     ['url' => 'https://example.com/image1.png'],
                     ['url' => 'https://example.com/image2.png'],
                     ['url' => 'https://example.com/image3.png']
@@ -83,7 +83,7 @@ class ImageIntegrationTest extends TestCase
     {
         $mockHandler = new MockHandler([
             $this->createMockResponse([
-                'data' => [
+                'images' => [
                     ['url' => 'https://example.com/callback-image.png']
                 ]
             ])
@@ -110,7 +110,7 @@ class ImageIntegrationTest extends TestCase
     {
         $mockHandler = new MockHandler([
             $this->createMockResponse([
-                'data' => [
+                'images' => [
                     ['url' => 'https://example.com/quick-image.png']
                 ]
             ])
@@ -136,7 +136,7 @@ class ImageIntegrationTest extends TestCase
         
         $mockHandler = new MockHandler([
             $this->createMockResponse([
-                'data' => [
+                'images' => [
                     ['b64_json' => $base64Data]
                 ]
             ])
@@ -170,7 +170,7 @@ class ImageIntegrationTest extends TestCase
     {
         $mockHandler = new MockHandler([
             $this->createMockResponse([
-                'data' => [
+                'images' => [
                     ['url' => 'https://example.com/edited-image.png']
                 ]
             ])

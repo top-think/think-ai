@@ -9,6 +9,7 @@ class StreamResponse
     protected StreamIterator $stream;
     protected array $chunks = [];
     protected string $fullContent = '';
+    protected string $fullReasoning = '';
     protected array $toolCalls = [];
     
     // Event handlers
@@ -97,14 +98,23 @@ class StreamResponse
         foreach ($this->stream as $chunk) {
             $this->chunks[] = $chunk;
             
-            // 累积内容
-            if (isset($chunk['choices'][0]['delta']['content'])) {
-                $this->fullContent .= $chunk['choices'][0]['delta']['content'];
+            $content = $chunk['delta']['content'] ?? null;
+            if ($content !== null) {
+                $this->fullContent .= $content;
+            }
+            
+            // 推理内容
+            $reasoning = $chunk['delta']['reasoning'] ?? null;
+            if ($reasoning !== null) {
+                if (!isset($this->fullReasoning)) {
+                    $this->fullReasoning = '';
+                }
+                $this->fullReasoning .= $reasoning;
             }
             
             // 处理工具调用
-            if (isset($chunk['choices'][0]['delta']['tool_calls'])) {
-                foreach ($chunk['choices'][0]['delta']['tool_calls'] as $toolCall) {
+            if (isset($chunk['delta']['tool_calls'])) {
+                foreach ($chunk['delta']['tool_calls'] as $toolCall) {
                     if (isset($toolCall['index'])) {
                         $index = $toolCall['index'];
                         if (!isset($this->toolCalls[$index])) {
@@ -134,9 +144,14 @@ class StreamResponse
             
             // 将 delta 格式转换为 message 格式，以便 ChatResponse 可以正确解析
             $formattedChunk = $chunk;
-            if (isset($chunk['choices'][0]['delta'])) {
-                $formattedChunk['choices'][0]['message'] = $chunk['choices'][0]['delta'];
-                unset($formattedChunk['choices'][0]['delta']);
+            
+            $formattedChunk['message'] = $chunk['delta'];
+            // 保留finish_reason和usage
+            if (isset($chunk['finish_reason'])) {
+                $formattedChunk['finish_reason'] = $chunk['finish_reason'];
+            }
+            if (isset($chunk['usage'])) {
+                $formattedChunk['usage'] = $chunk['usage'];
             }
             
             $response = new ChatResponse($formattedChunk);
@@ -155,13 +170,23 @@ class StreamResponse
         if (empty($this->chunks)) {
             foreach ($this->stream as $chunk) {
                 $this->chunks[] = $chunk;
-                if (isset($chunk['choices'][0]['delta']['content'])) {
-                    $this->fullContent .= $chunk['choices'][0]['delta']['content'];
+                // 兼容新旧格式
+                $content = $chunk['delta']['content'] ?? null;
+                if ($content !== null) {
+                    $this->fullContent .= $content;
                 }
             }
         }
         
         return $this->fullContent;
+    }
+    
+    /**
+     * 获取完整的推理内容（针对推理模型）
+     */
+    public function getFullReasoning(): string
+    {
+        return $this->fullReasoning ?? '';
     }
     
     /**
@@ -210,8 +235,8 @@ class StreamResponse
         
         // 从已处理的chunks中获取工具调用
         foreach ($this->chunks as $chunk) {
-            if (isset($chunk['choices'][0]['delta']['tool_calls'])) {
-                foreach ($chunk['choices'][0]['delta']['tool_calls'] as $toolCall) {
+            if (isset($chunk['delta']['tool_calls'])) {
+                foreach ($chunk['delta']['tool_calls'] as $toolCall) {
                     if (isset($toolCall['index'])) {
                         $index = $toolCall['index'];
                         if (!isset($toolCalls[$index])) {
@@ -261,17 +286,13 @@ class StreamResponse
         
         // 构造完整的响应数据
         $responseData = [
-            'choices' => [
-                [
-                    'message' => [
-                        'role' => 'assistant',
-                        'content' => $fullContent
-                    ],
-                    'finish_reason' => 'stop'
-                ]
-            ]
+            'message' => [
+                'role' => 'assistant',
+                'content' => $fullContent
+            ],
+            'finish_reason' => 'stop'
         ];
-        
+
         // 如果有其他元数据，从最后一个 chunk 中获取
         if (!empty($this->chunks)) {
             $lastChunk = end($this->chunks);
@@ -303,9 +324,8 @@ class StreamResponse
                 $this->chunks[] = $chunk;
                 $chunkCount++;
                 
-                // 累积内容
-                if (isset($chunk['choices'][0]['delta']['content'])) {
-                    $content = $chunk['choices'][0]['delta']['content'];
+                $content = $chunk['delta']['content'] ?? null;
+                if ($content !== null) {
                     $this->fullContent .= $content;
                     
                     // 处理缓冲区
@@ -326,8 +346,8 @@ class StreamResponse
                 }
                 
                 // 处理工具调用
-                if (isset($chunk['choices'][0]['delta']['tool_calls'])) {
-                    foreach ($chunk['choices'][0]['delta']['tool_calls'] as $toolCall) {
+                if (isset($chunk['delta']['tool_calls'])) {
+                    foreach ($chunk['delta']['tool_calls'] as $toolCall) {
                         if (isset($toolCall['index'])) {
                             $index = $toolCall['index'];
                             if (!isset($this->toolCalls[$index])) {
@@ -395,8 +415,9 @@ class StreamResponse
         header('X-Accel-Buffering: no');
         
         foreach ($this->stream as $chunk) {
-            if (isset($chunk['choices'][0]['delta']['content'])) {
-                $content = $chunk['choices'][0]['delta']['content'];
+            // 兼容新旧格式
+            $content = $chunk['delta']['content'] ?? null;
+            if ($content !== null) {
                 echo "data: " . json_encode(['content' => $content]) . "\n\n";
                 ob_flush();
                 flush();
@@ -421,8 +442,9 @@ class StreamResponse
         
         try {
             foreach ($this->stream as $chunk) {
-                if (isset($chunk['choices'][0]['delta']['content'])) {
-                    $content = $chunk['choices'][0]['delta']['content'];
+                // 兼容新旧格式
+                $content = $chunk['delta']['content'] ?? null;
+                if ($content !== null) {
                     fwrite($file, $content);
                     fflush($file);
                 }

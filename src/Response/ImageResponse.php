@@ -9,7 +9,7 @@ class ImageResponse extends BaseResponse
      */
     public function getImages(): array
     {
-        return $this->data['data'] ?? [];
+        return $this->data['images'] ?? [];
     }
     
     /**
@@ -17,7 +17,7 @@ class ImageResponse extends BaseResponse
      */
     public function getUrl(): string
     {
-        return $this->data['data'][0]['url'] ?? '';
+        return $this->data['images'][0]['url'] ?? '';
     }
     
     /**
@@ -39,7 +39,7 @@ class ImageResponse extends BaseResponse
      */
     public function getBase64(): string
     {
-        return $this->data['data'][0]['b64_json'] ?? '';
+        return $this->data['images'][0]['b64_json'] ?? '';
     }
     
     /**

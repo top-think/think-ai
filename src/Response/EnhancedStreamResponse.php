@@ -62,6 +62,22 @@ class EnhancedStreamResponse extends StreamResponse
     }
     
     /**
+     * 处理工具调用事件
+     */
+    public function onToolCalls(callable $handler): self
+    {
+        return $this->on('tool_calls', $handler);
+    }
+    
+    /**
+     * 处理推理内容事件（针对推理模型）
+     */
+    public function onReasoning(callable $handler): self
+    {
+        return $this->on('reasoning', $handler);
+    }
+    
+    /**
      * 开始处理流
      */
     public function process(): self
@@ -80,18 +96,36 @@ class EnhancedStreamResponse extends StreamResponse
             foreach ($this->stream as $chunk) {
                 $this->chunks[] = $chunk;
                 
-                // 处理内容
-                if (isset($chunk['choices'][0]['delta']['content'])) {
-                    $content = $chunk['choices'][0]['delta']['content'];
+                $content = $chunk['delta']['content'] ?? null;
+                if ($content !== null) {
                     $this->fullContent .= $content;
                     
                     // 触发内容事件
                     $this->trigger('content', $content, $chunk);
                 }
                 
-                // 处理函数调用
-                if (isset($chunk['choices'][0]['delta']['function_call'])) {
-                    $this->trigger('function_call', $chunk['choices'][0]['delta']['function_call'], $chunk);
+                // 处理推理内容
+                $reasoning = $chunk['delta']['reasoning'] ?? null;
+                if ($reasoning !== null) {
+                    if (!isset($this->fullReasoning)) {
+                        $this->fullReasoning = '';
+                    }
+                    $this->fullReasoning .= $reasoning;
+                    
+                    // 触发推理事件
+                    $this->trigger('reasoning', $reasoning, $chunk);
+                }
+                
+                // 处理函数调用 
+                $functionCall = $chunk['delta']['function_call'] ?? null;
+                if ($functionCall !== null) {
+                    $this->trigger('function_call', $functionCall, $chunk);
+                }
+                
+                // 处理工具调用 
+                $toolCalls = $chunk['delta']['tool_calls'] ?? null;
+                if ($toolCalls !== null) {
+                    $this->trigger('tool_calls', $toolCalls, $chunk);
                 }
                 
                 // 通用 chunk 事件

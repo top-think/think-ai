@@ -9,7 +9,7 @@ class ChatResponse extends BaseResponse
      */
     public function getContent(): string
     {
-        return $this->data['choices'][0]['message']['content'] ?? '';
+        return $this->data['message']['content'] ?? '';
     }
     
     /**
@@ -17,7 +17,7 @@ class ChatResponse extends BaseResponse
      */
     public function getMessage(): array
     {
-        return $this->data['choices'][0]['message'] ?? [];
+        return $this->data['message'] ?? [];
     }
     
     /**
@@ -25,7 +25,23 @@ class ChatResponse extends BaseResponse
      */
     public function getRole(): string
     {
-        return $this->data['choices'][0]['message']['role'] ?? '';
+        return $this->data['message']['role'] ?? '';
+    }
+    
+    /**
+     * 获取推理内容（针对推理模型）
+     */
+    public function getReasoning(): string
+    {
+        return $this->data['message']['reasoning'] ?? '';
+    }
+    
+    /**
+     * 是否有推理内容
+     */
+    public function hasReasoning(): bool
+    {
+        return !empty($this->getReasoning());
     }
     
     /**
@@ -73,7 +89,7 @@ class ChatResponse extends BaseResponse
      */
     public function getFinishReason(): string
     {
-        return $this->data['choices'][0]['finish_reason'] ?? '';
+        return $this->data['finish_reason'] ?? '';
     }
     
     /**
@@ -82,6 +98,14 @@ class ChatResponse extends BaseResponse
     public function isLengthStop(): bool
     {
         return $this->getFinishReason() === 'length';
+    }
+    
+    /**
+     * 是否因工具调用而停止
+     */
+    public function isToolCallsStop(): bool
+    {
+        return $this->getFinishReason() === 'tool_calls';
     }
     
     /**
@@ -97,7 +121,9 @@ class ChatResponse extends BaseResponse
      */
     public function hasToolCalls(): bool
     {
-        return !empty($this->data['choices'][0]['message']['tool_calls']);
+        // 兼容新旧格式，同时检查 finish_reason
+        return $this->getFinishReason() === 'tool_calls' || 
+               !empty($this->data['message']['tool_calls']);
     }
     
     /**
@@ -107,7 +133,7 @@ class ChatResponse extends BaseResponse
      */
     public function getToolCalls(): array
     {
-        $toolCalls = $this->data['choices'][0]['message']['tool_calls'] ?? [];
+        $toolCalls = $this->data['message']['tool_calls'] ?? [];
         
         // 转换为更易用的对象格式
         return array_map(function($toolCall) {
@@ -126,6 +152,7 @@ class ChatResponse extends BaseResponse
      */
     public function getToolCallIds(): array
     {
-        return array_column($this->data['choices'][0]['message']['tool_calls'] ?? [], 'id');
+        $toolCalls = $this->data['message']['tool_calls'] ?? [];
+        return array_column($toolCalls, 'id');
     }
 }

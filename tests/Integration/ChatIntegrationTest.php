@@ -23,14 +23,10 @@ class ChatIntegrationTest extends TestCase
             $this->createMockResponse([
                 'id' => 'chatcmpl-123',
                 'model' => 'gpt-3.5-turbo',
-                'choices' => [
-                    [
-                        'message' => [
-                            'role' => 'assistant',
-                            'content' => '你好！有什么可以帮助你的吗？'
-                        ],
-                        'finish_reason' => 'stop'
-                    ]
+                'finish_reason' => 'stop',
+                'message' => [
+                    'role' => 'assistant',
+                    'content' => '你好！有什么可以帮助你的吗？'
                 ],
                 'usage' => [
                     'prompt_tokens' => 10,
@@ -64,11 +60,11 @@ class ChatIntegrationTest extends TestCase
     public function testStreamChat()
     {
         $chunks = [
-            ['choices' => [['delta' => ['content' => '你好'], 'index' => 0]]],
-            ['choices' => [['delta' => ['content' => '！'], 'index' => 0]]],
-            ['choices' => [['delta' => ['content' => '有什么'], 'index' => 0]]],
-            ['choices' => [['delta' => ['content' => '可以帮助你'], 'index' => 0]]],
-            ['choices' => [['delta' => ['content' => '的吗？'], 'index' => 0]]]
+            ['delta' => ['content' => '你好']],
+            ['delta' => ['content' => '！']],
+            ['delta' => ['content' => '有什么']],
+            ['delta' => ['content' => '可以帮助你']],
+            ['delta' => ['content' => '的吗？']]
         ];
         
         $mockHandler = new MockHandler([
@@ -101,9 +97,7 @@ class ChatIntegrationTest extends TestCase
     {
         $mockHandler = new MockHandler([
             $this->createMockResponse([
-                'choices' => [
-                    ['message' => ['role' => 'assistant', 'content' => 'Test response']]
-                ]
+                ['message' => ['role' => 'assistant', 'content' => 'Test response']]
             ])
         ]);
         
@@ -129,9 +123,7 @@ class ChatIntegrationTest extends TestCase
     {
         $mockHandler = new MockHandler([
             $this->createMockResponse([
-                'choices' => [
-                    ['message' => ['role' => 'assistant', 'content' => '这是一个测试响应']]
-                ]
+                ['message' => ['role' => 'assistant', 'content' => '这是一个测试响应']]
             ])
         ]);
         
@@ -186,9 +178,7 @@ class ChatIntegrationTest extends TestCase
         
         $mockHandler = new MockHandler([
             $this->createMockResponse([
-                'choices' => [
-                    ['message' => ['role' => 'assistant', 'content' => 'Response']]
-                ]
+                ['message' => ['role' => 'assistant', 'content' => 'Response']]
             ])
         ]);
         
@@ -208,14 +198,10 @@ class ChatIntegrationTest extends TestCase
     {
         $mockHandler = new MockHandler([
             $this->createMockResponse([
-                'choices' => [
-                    ['message' => ['role' => 'assistant', 'content' => '北京今天晴天，温度25度。']]
-                ]
+                ['message' => ['role' => 'assistant', 'content' => '北京今天晴天，温度25度。']]
             ]),
             $this->createMockResponse([
-                'choices' => [
-                    ['message' => ['role' => 'assistant', 'content' => '上海今天多云，温度22度。']]
-                ]
+                ['message' => ['role' => 'assistant', 'content' => '上海今天多云，温度22度。']]
             ])
         ]);
         

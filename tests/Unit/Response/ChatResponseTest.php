@@ -14,15 +14,10 @@ class ChatResponseTest extends TestCase
             'object' => 'chat.completion',
             'created' => 1677652288,
             'model' => 'gpt-3.5-turbo',
-            'choices' => [
-                [
-                    'index' => 0,
-                    'message' => [
-                        'role' => 'assistant',
-                        'content' => '你好！我是 AI 助手。'
-                    ],
-                    'finish_reason' => 'stop'
-                ]
+            'finish_reason' => 'stop',
+            'message' => [
+                'role' => 'assistant',
+                'content' => '你好！我是 AI 助手。'
             ],
             'usage' => [
                 'prompt_tokens' => 10,
@@ -92,19 +87,9 @@ class ChatResponseTest extends TestCase
         $response = new ChatResponse($data);
         $this->assertFalse($response->isLengthStop());
         
-        $data['choices'][0]['finish_reason'] = 'length';
+        $data['finish_reason'] = 'length';
         $response = new ChatResponse($data);
         $this->assertTrue($response->isLengthStop());
-    }
-    
-    public function testGetChoices()
-    {
-        $response = new ChatResponse($this->createChatData());
-        $choices = $response->getChoices();
-        
-        $this->assertIsArray($choices);
-        $this->assertCount(1, $choices);
-        $this->assertEquals(0, $choices[0]['index']);
     }
     
     public function testEmptyResponse()

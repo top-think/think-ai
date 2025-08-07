@@ -11,7 +11,7 @@ class ImageResponseTest extends TestCase
     {
         return [
             'created' => 1677652288,
-            'data' => [
+            'images' => [
                 [
                     'url' => 'https://example.com/image1.png',
                     'revised_prompt' => 'A cute cat'
@@ -28,7 +28,7 @@ class ImageResponseTest extends TestCase
     {
         return [
             'created' => 1677652288,
-            'data' => [
+            'images' => [
                 [
                     'b64_json' => base64_encode('image data 1'),
                 ],
@@ -108,7 +108,7 @@ class ImageResponseTest extends TestCase
         // 模拟 base64 图片数据
         $imageData = 'test image content';
         $data = [
-            'data' => [
+            'images' => [
                 ['b64_json' => base64_encode($imageData)]
             ]
         ];
@@ -140,7 +140,7 @@ class ImageResponseTest extends TestCase
         
         // 模拟 base64 图片数据
         $data = [
-            'data' => [
+            'images' => [
                 ['b64_json' => base64_encode('image 1')],
                 ['b64_json' => base64_encode('image 2')]
             ]
