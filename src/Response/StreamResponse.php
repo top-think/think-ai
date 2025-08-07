@@ -11,6 +11,7 @@ class StreamResponse
     protected string $fullContent = '';
     protected string $fullReasoning = '';
     protected array $toolCalls = [];
+    protected $plugin;
     
     // Event handlers
     protected $startHandler;
@@ -225,12 +226,14 @@ class StreamResponse
                 // 处理工具调用
                 if (isset($chunk['delta']['tool_calls'])) {
                     foreach ($chunk['delta']['tool_calls'] as $toolCall) {
-                        $tool = new PluginResponse($toolCall);
+                        if (is_null($this->plugin)) {
+                            $this->plugin = new PluginResponse($toolCall);
+                        }
+                        $this->plugin->setPluginData($toolCall);
+
                         if ($this->toolcallHandler) {
-                            ($this->toolcallHandler)($tool);
-                        } else {
-                            $this->toolCalls[] = $tool;
-                        }                        
+                            ($this->toolcallHandler)($this->plugin);
+                        }                       
                     }
                 }
                 

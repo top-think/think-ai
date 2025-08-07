@@ -9,7 +9,14 @@ class PluginResponse extends BaseResponse
      */
     public function getContent(): string
     {
-        return $this->data['plugin']['response'] ?? [];
+        return $this->data['plugin']['response'] ?? '';
     }
 
+    /**
+     * 设置插件数据
+     */
+    public function setPluginData(array $data)
+    {
+        $this->data['plugin'] = array_merge($this->data['plugin'], $data['plugin']);
+    }
 }

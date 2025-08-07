@@ -92,6 +92,12 @@ $stream->onStart(function() {
 ->onContent(function($content) {
     echo $content;
 })
+->onToolCall(function($tool){
+    // 调用插件返回数据
+    echo $tool->getContent();
+    // 交给大模型处理
+    // ...
+})
 ->onEnd(function($fullContent) {
     echo "\n生成完成！总字数：" . mb_strlen($fullContent);
 })

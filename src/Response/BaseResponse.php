@@ -18,7 +18,7 @@ abstract class BaseResponse
     {
         return $this->data;
     }
-    
+
     /**
      * 将响应转换为 JSON 字符串
      */
@@ -51,6 +51,14 @@ abstract class BaseResponse
         return $this->data[$name] ?? null;
     }
     
+    /**
+     * 魔术方法，允许设置响应数据
+     */
+    public function __set($name, $value)
+    {
+        $this->data[$name] = $value;
+    }
+
     /**
      * 检查响应中是否存在某个键
      */

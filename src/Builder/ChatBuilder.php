@@ -51,6 +51,7 @@ class ChatBuilder extends BaseBuilder
             'role' => 'assistant',
             'content' => $content,
         ];
+
         return $this;
     }
     
@@ -246,6 +247,21 @@ class ChatBuilder extends BaseBuilder
         ]);
     }
     
+    /**
+     * 添加函数调用返回消息
+     * 
+     * @param array $result 工具调用返回数据
+     * @return $this
+     */
+    public function toolReturn(array $result): self
+    {
+        $this->messages[] = [
+            'role' => 'assistant',
+            'tool_calls' => [$result],
+        ];
+        return $this;
+    }
+
     /**
      * 添加图片消息（用于视觉模型）
      * 
