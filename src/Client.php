@@ -12,6 +12,7 @@ use think\ai\api\Model;
 use think\ai\api\Music;
 use think\ai\api\Plugin;
 use think\ai\api\Rerank;
+use think\ai\api\Responses;
 use think\ai\api\Sandbox;
 use think\ai\api\Videos;
 
@@ -30,6 +31,11 @@ class Client
             $handler = new HandlerStack(Utils::chooseHandler());
         }
         $this->handler = $handler;
+    }
+
+    public function responses()
+    {
+        return new Responses($this);
     }
 
     public function chat()
