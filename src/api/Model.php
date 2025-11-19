@@ -12,4 +12,9 @@ class Model extends Api
             'query' => $params,
         ]);
     }
+
+    public function show($type, $code)
+    {
+        return $this->request('GET', "model/{$type}/{$code}");
+    }
 }
