@@ -27,12 +27,11 @@ class Avatar extends Api
         $start = time();
         while (true) {
             try {
-                $result = $this->query(['id' => $id]);
+                $result = $this->query(['model' => $params['model'], 'id' => $id]);
                 if (Arr::get($result, 'status') != 'processing') {
                     return $result;
                 }
             } catch (\Throwable) {
-
             }
             if (time() - $start > $wait) {
                 throw new Exception('Timeout');
