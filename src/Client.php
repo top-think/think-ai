@@ -5,6 +5,7 @@ namespace think\ai;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Utils;
 use think\ai\api\Audio;
+use think\ai\api\Avatar;
 use think\ai\api\Chat;
 use think\ai\api\Embeddings;
 use think\ai\api\Images;
@@ -56,6 +57,11 @@ class Client
     public function audio()
     {
         return new Audio($this);
+    }
+
+    public function avatar()
+    {
+        return new Avatar($this);
     }
 
     public function music()
