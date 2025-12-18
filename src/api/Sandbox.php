@@ -16,18 +16,28 @@ class Sandbox extends Api
         ]);
     }
 
-    public function readFile($name, $path)
+    public function get($name)
     {
-        return $this->request("POST", "sandbox/{$name}/read", [
+        return $this->request('GET', "sandbox/{$name}");
+    }
+
+    public function delete($name)
+    {
+        $this->request('DELETE', "sandbox/{$name}");
+    }
+
+    public function readFile($id, $path)
+    {
+        return $this->request("POST", "sandbox/{$id}/read", [
             'json' => [
                 'path' => $path,
             ],
         ]);
     }
 
-    public function writeFile($name, $path, $content)
+    public function writeFile($id, $path, $content)
     {
-        return $this->request("POST", "sandbox/{$name}/write", [
+        return $this->request("POST", "sandbox/{$id}/write", [
             'json' => [
                 'path'    => $path,
                 'content' => $content,
@@ -35,35 +45,30 @@ class Sandbox extends Api
         ]);
     }
 
-    public function uploadFile($name, $path, $file)
+    public function uploadFile($id, $path, $file)
     {
         if ($file instanceof SplFileInfo) {
             $file = $file->getRealPath();
         }
-        try {
-            $content = fopen($file, 'r');
 
-            return $this->request("POST", "sandbox/{$name}/upload", [
-                'multipart' => [
-                    [
-                        'name'     => 'path',
-                        'contents' => $path,
-                    ],
-                    [
-                        'name'     => 'file',
-                        'contents' => $content,
-                        'filename' => basename($path),
-                    ],
+        return $this->request("POST", "sandbox/{$id}/upload", [
+            'multipart' => [
+                [
+                    'name'     => 'path',
+                    'contents' => $path,
                 ],
-            ]);
-        } finally {
-            fclose($content);
-        }
+                [
+                    'name'     => 'file',
+                    'contents' => fopen($file, 'r'),
+                    'filename' => basename($path),
+                ],
+            ],
+        ]);
     }
 
-    public function runCode($name, $code, $files = [])
+    public function runCode($id, $code, $files = [])
     {
-        return $this->request("POST", "sandbox/{$name}/code", [
+        return $this->request("POST", "sandbox/{$id}/code", [
             'json' => [
                 'code'  => $code,
                 'files' => $files,
@@ -71,17 +76,12 @@ class Sandbox extends Api
         ]);
     }
 
-    public function runCommand($name, $command)
+    public function runCommand($id, $command)
     {
-        return $this->request("POST", "sandbox/{$name}/command", [
+        return $this->request("POST", "sandbox/{$id}/command", [
             'json' => [
                 'command' => $command,
             ],
         ]);
-    }
-
-    public function delete($name)
-    {
-        $this->request('DELETE', "sandbox/{$name}", []);
     }
 }
