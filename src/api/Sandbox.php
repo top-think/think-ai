@@ -26,10 +26,19 @@ class Sandbox extends Api
         $this->request('DELETE', "sandbox/{$name}");
     }
 
+    public function listFile($id, $path = null)
+    {
+        return $this->request("GET", "sandbox/{$id}/list", [
+            'query' => [
+                'path' => $path,
+            ],
+        ]);
+    }
+
     public function readFile($id, $path)
     {
-        return $this->request("POST", "sandbox/{$id}/read", [
-            'json' => [
+        return $this->request("GET", "sandbox/{$id}/read", [
+            'query' => [
                 'path' => $path,
             ],
         ]);
@@ -63,6 +72,16 @@ class Sandbox extends Api
                     'filename' => basename($path),
                 ],
             ],
+        ]);
+    }
+
+    public function downloadFile($id, $path)
+    {
+        return $this->request("GET", "sandbox/{$id}/download", [
+            'query'  => [
+                'path' => $path,
+            ],
+            'stream' => true,
         ]);
     }
 
