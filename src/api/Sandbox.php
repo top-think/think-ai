@@ -58,6 +58,8 @@ class Sandbox extends Api
     {
         if ($file instanceof SplFileInfo) {
             $file = $file->getRealPath();
+        } else if(!is_resource($file)){
+            $file = fopen($file, 'r');
         }
 
         return $this->request("POST", "sandbox/{$id}/upload", [
@@ -68,7 +70,7 @@ class Sandbox extends Api
                 ],
                 [
                     'name'     => 'file',
-                    'contents' => fopen($file, 'r'),
+                    'contents' => $file,
                     'filename' => basename($path),
                 ],
             ],
