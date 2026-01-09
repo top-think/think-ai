@@ -2,8 +2,9 @@
 
 namespace think\ai\api;
 
-use SplFileInfo;
+use Psr\Http\Message\StreamInterface;
 use think\ai\Api;
+use think\ai\StreamIterator;
 
 class Sandbox extends Api
 {
@@ -28,7 +29,7 @@ class Sandbox extends Api
 
     public function listFile($id, $path = null)
     {
-        return $this->request("GET", "sandbox/{$id}/list", [
+        return $this->request('GET', "sandbox/{$id}/list", [
             'query' => [
                 'path' => $path,
             ],
@@ -37,7 +38,7 @@ class Sandbox extends Api
 
     public function readFile($id, $path)
     {
-        return $this->request("GET", "sandbox/{$id}/read", [
+        return $this->request('GET', "sandbox/{$id}/read", [
             'query' => [
                 'path' => $path,
             ],
@@ -46,7 +47,7 @@ class Sandbox extends Api
 
     public function writeFile($id, $path, $content)
     {
-        return $this->request("POST", "sandbox/{$id}/write", [
+        return $this->request('POST', "sandbox/{$id}/write", [
             'json' => [
                 'path'    => $path,
                 'content' => $content,
@@ -56,13 +57,13 @@ class Sandbox extends Api
 
     public function uploadFile($id, $path, $file)
     {
-        if ($file instanceof SplFileInfo) {
+        if ($file instanceof \SplFileInfo) {
             $file = $file->getRealPath();
-        } else if(!is_resource($file)){
+        } elseif (!is_resource($file)) {
             $file = fopen($file, 'r');
         }
 
-        return $this->request("POST", "sandbox/{$id}/upload", [
+        return $this->request('POST', "sandbox/{$id}/upload", [
             'multipart' => [
                 [
                     'name'     => 'path',
@@ -79,8 +80,8 @@ class Sandbox extends Api
 
     public function downloadFile($id, $path)
     {
-        return $this->request("GET", "sandbox/{$id}/download", [
-            'query'  => [
+        return $this->request('GET', "sandbox/{$id}/download", [
+            'query' => [
                 'path' => $path,
             ],
             'stream' => true,
@@ -89,7 +90,7 @@ class Sandbox extends Api
 
     public function runCode($id, $code, $files = [])
     {
-        return $this->request("POST", "sandbox/{$id}/code", [
+        return $this->request('POST', "sandbox/{$id}/code", [
             'json' => [
                 'code'  => $code,
                 'files' => $files,
@@ -97,12 +98,20 @@ class Sandbox extends Api
         ]);
     }
 
-    public function runCommand($id, $command)
+    public function runCommand($id, $command, $stream = false)
     {
-        return $this->request("POST", "sandbox/{$id}/command", [
+        $res = $this->request('POST', "sandbox/{$id}/command", [
             'json' => [
                 'command' => $command,
+                'stream'  => $stream,
             ],
+            'stream' => $stream,
         ]);
+
+        if ($res instanceof StreamInterface) {
+            return new StreamIterator($res);
+        }
+
+        return $res;
     }
 }
