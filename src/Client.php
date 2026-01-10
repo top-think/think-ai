@@ -97,20 +97,21 @@ class Client
     public function setEndpoint($endpoint)
     {
         $this->endpoint = $endpoint;
+
         return $this;
     }
 
     public function createHttpClient()
     {
         return new \GuzzleHttp\Client([
-            'base_uri'     => $this->endpoint,
-            'handler'      => $this->handler,
-            'headers'      => [
+            'base_uri' => $this->endpoint,
+            'handler'  => $this->handler,
+            'headers'  => [
                 'Authorization' => "Bearer {$this->token}",
                 'User-Agent'    => 'ThinkAi/1.0',
                 'Accept'        => 'application/json',
             ],
-            'read_timeout' => 180,
+            'read_timeout' => 300,
             'verify'       => false,
         ]);
     }
