@@ -55,6 +55,17 @@ class Sandbox extends Api
         ]);
     }
 
+    public function editFile($id, $path, $oldStr, $newStr = '')
+    {
+        return $this->request('POST', "sandbox/{$id}/edit", [
+            'json' => [
+                'path'    => $path,
+                'old_str' => $oldStr,
+                'new_str' => $newStr,
+            ],
+        ]);
+    }
+
     public function uploadFile($id, $path, $file)
     {
         if ($file instanceof \SplFileInfo) {
