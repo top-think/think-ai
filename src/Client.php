@@ -3,7 +3,12 @@
 namespace think\ai;
 
 use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Utils;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
 use think\ai\api\Audio;
 use think\ai\api\Avatar;
 use think\ai\api\Chat;
@@ -32,6 +37,7 @@ class Client
             $handler = new HandlerStack(Utils::chooseHandler());
         }
         $this->handler = $handler;
+        $this->setupRetryMiddleware();
     }
 
     public function responses()
@@ -99,6 +105,30 @@ class Client
         $this->endpoint = $endpoint;
 
         return $this;
+    }
+
+    protected function setupRetryMiddleware()
+    {
+        $this->handler->push(Middleware::retry(
+            function ($retries, Request $request, Response $response = null, RequestException $exception = null) {
+                if ($retries >= 3) {
+                    return false;
+                }
+
+                if ($exception instanceof ConnectException) {
+                    return true;
+                }
+
+                if ($response && in_array($response->getStatusCode(), [429, 500, 502, 503, 504])) {
+                    return true;
+                }
+
+                return false;
+            },
+            function ($retries) {
+                return 1000 * pow(2, $retries);
+            }
+        ));
     }
 
     public function createHttpClient()
