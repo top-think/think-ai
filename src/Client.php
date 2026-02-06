@@ -2,13 +2,12 @@
 
 namespace think\ai;
 
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Utils;
-use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\RequestException;
 use think\ai\api\Audio;
 use think\ai\api\Avatar;
 use think\ai\api\Chat;
@@ -110,7 +109,7 @@ class Client
     protected function setupRetryMiddleware()
     {
         $this->handler->push(Middleware::retry(
-            function ($retries, Request $request, Response $response = null, RequestException $exception = null) {
+            function ($retries, Request $request, Response $response = null, $exception = null) {
                 if ($retries >= 3) {
                     return false;
                 }
@@ -134,9 +133,9 @@ class Client
     public function createHttpClient()
     {
         return new \GuzzleHttp\Client([
-            'base_uri' => $this->endpoint,
-            'handler'  => $this->handler,
-            'headers'  => [
+            'base_uri'     => $this->endpoint,
+            'handler'      => $this->handler,
+            'headers'      => [
                 'Authorization' => "Bearer {$this->token}",
                 'User-Agent'    => 'ThinkAi/1.0',
                 'Accept'        => 'application/json',
