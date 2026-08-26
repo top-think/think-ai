@@ -19,6 +19,7 @@ use think\ai\api\Plugin;
 use think\ai\api\Rerank;
 use think\ai\api\Responses;
 use think\ai\api\Sandbox;
+use think\ai\api\Skill;
 use think\ai\api\Videos;
 
 class Client
@@ -97,6 +98,11 @@ class Client
     public function sandbox()
     {
         return new Sandbox($this);
+    }
+
+    public function skill()
+    {
+        return new Skill($this);
     }
 
     public function setEndpoint($endpoint)
