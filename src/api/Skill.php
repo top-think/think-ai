@@ -25,4 +25,20 @@ class Skill extends Api
     {
         return $this->request('GET', 'skill/category');
     }
+
+    /**
+     * 下载技能包。
+     *
+     * @param string $path list() 返回的技能包路径
+     * @return \Psr\Http\Message\StreamInterface
+     */
+    public function download($path)
+    {
+        return $this->request('GET', 'skill/download', [
+            'query' => [
+                'path' => $path,
+            ],
+            'stream' => true,
+        ]);
+    }
 }
